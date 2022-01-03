@@ -384,7 +384,7 @@ static int parse_options(struct super_block *sb, char *options)
 		解析挂载选项之前，首先判断fsb中是否已经设置ndev_path
 	*/
 	/* start */
-	if(sbi->raw_super->ndev_path[NVM_PATH_IDX]) {
+	if(sbi->raw_super->ndev_path[NVM_PATH_IDX][0]) {
 		//非第一次挂载，忽略nvm挂载选项
 		ignore_nvmpath = true;
 		nvm_ready = true;
@@ -411,7 +411,7 @@ static int parse_options(struct super_block *sb, char *options)
 			（例如：background_gc=2，则p指的是整个字符串“background_gc=2”，args指的是“2”）
 		*/
 		token = match_token(p, f2fs_tokens, args);
-		printk(KERN_INFO"ZN trap: p: %s, token: %d",p,token);
+
 		/*
 			对于有挂载值的挂载参数，需要获得挂载选项对应的挂载值；
 			没有挂载值，则不需要获得挂载值
@@ -422,10 +422,9 @@ static int parse_options(struct super_block *sb, char *options)
 		case Opt_nvm_path:
 			if(!ignore_nvmpath) { //第一次挂载
 				name = match_strdup(&args[0]); //获得挂载路径
-				if (!name){
-					printk(KERN_INFO"ZN trap: ndev_path[NVM_PATH_IDX] error!");
+				if (!name)
 					return -ENOMEM;
-				}
+
 				printk(KERN_INFO"ZN trap: option ndev_path[NVM_PATH_IDX]: %s",name);
 				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
 				strcpy(sbi->raw_super->ndev_path[NVM_PATH_IDX], name);
@@ -2984,8 +2983,6 @@ try_onemore:
 
 	//TODO:根据ndev得到nvm设备的block_device,f2fs_fs_type参数是否应该替换成是NULL？？？
 	nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[NVM_PATH_IDX], mode, NULL);
-	printk(KERN_INFO"ZN trap: blkdev_get_by_path ndev_path[NVM_PATH_IDX] %s",sbi->raw_super->ndev_path[NVM_PATH_IDX]);
-	printk(KERN_INFO"ZN trap: IS_ERR(nbdev) %d",IS_ERR(nbdev));
 	if (IS_ERR(nbdev))
 	{
 		goto free_io_dummy;
