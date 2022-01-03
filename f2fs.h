@@ -1281,6 +1281,9 @@ struct f2fs_sb_info {
 	/*start*/
     struct nvm_sb_info *nsbi;
     /*end*/
+	/* ZN start */
+	struct nvm_sb_info *byte_nsbi;
+	/* ZN end */
 };
 
 #ifdef CONFIG_F2FS_FAULT_INJECTION

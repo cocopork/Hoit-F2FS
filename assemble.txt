@@ -1,0 +1,3758 @@
+
+super.o：     文件格式 elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <ns_test_super>:
+}
+
+EXPORT_SYMBOL(kill_litter_super);
+
+static int ns_test_super(struct super_block *sb, void *data)
+{
+       0:	f3 0f 1e fa          	endbr64 
+       4:	e8 00 00 00 00       	callq  9 <ns_test_super+0x9>
+       9:	55                   	push   %rbp
+	return sb->s_fs_info == data;
+       a:	31 c0                	xor    %eax,%eax
+       c:	48 39 b7 08 04 00 00 	cmp    %rsi,0x408(%rdi)
+      13:	0f 94 c0             	sete   %al
+{
+      16:	48 89 e5             	mov    %rsp,%rbp
+}
+      19:	5d                   	pop    %rbp
+      1a:	c3                   	retq   
+      1b:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+
+0000000000000020 <set_bdev_super>:
+
+EXPORT_SYMBOL(mount_ns);
+
+#ifdef CONFIG_BLOCK
+static int set_bdev_super(struct super_block *s, void *data)
+{
+      20:	f3 0f 1e fa          	endbr64 
+      24:	e8 00 00 00 00       	callq  29 <set_bdev_super+0x9>
+      29:	55                   	push   %rbp
+	s->s_bdev = data;
+      2a:	48 89 b7 d0 00 00 00 	mov    %rsi,0xd0(%rdi)
+	s->s_dev = s->s_bdev->bd_dev;
+      31:	8b 06                	mov    (%rsi),%eax
+{
+      33:	48 89 e5             	mov    %rsp,%rbp
+	s->s_dev = s->s_bdev->bd_dev;
+      36:	89 47 10             	mov    %eax,0x10(%rdi)
+	s->s_bdi = bdi_get(s->s_bdev->bd_bdi);
+      39:	48 8b 86 90 00 00 00 	mov    0x90(%rsi),%rax
+		: "cc", "cx");
+}
+
+static __always_inline void refcount_inc(refcount_t *r)
+{
+	asm volatile(LOCK_PREFIX "incl %0\n\t"
+      40:	f0 ff 40 38          	lock incl 0x38(%rax)
+      44:	0f 88 00 00 00 00    	js     4a <set_bdev_super+0x2a>
+      4a:	48 89 87 d8 00 00 00 	mov    %rax,0xd8(%rdi)
+
+	return 0;
+}
+      51:	5d                   	pop    %rbp
+      52:	31 c0                	xor    %eax,%eax
+      54:	c3                   	retq   
+      55:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+      5c:	00 00 00 00 
+
+0000000000000060 <test_bdev_super>:
+
+static int test_bdev_super(struct super_block *s, void *data)
+{
+      60:	f3 0f 1e fa          	endbr64 
+      64:	e8 00 00 00 00       	callq  69 <test_bdev_super+0x9>
+      69:	55                   	push   %rbp
+	return (void *)s->s_bdev == data;
+      6a:	31 c0                	xor    %eax,%eax
+      6c:	48 39 b7 d0 00 00 00 	cmp    %rsi,0xd0(%rdi)
+      73:	0f 94 c0             	sete   %al
+{
+      76:	48 89 e5             	mov    %rsp,%rbp
+}
+      79:	5d                   	pop    %rbp
+      7a:	c3                   	retq   
+      7b:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+
+0000000000000080 <compare_single>:
+	return dget(s->s_root);
+}
+EXPORT_SYMBOL(mount_nodev);
+
+static int compare_single(struct super_block *s, void *p)
+{
+      80:	f3 0f 1e fa          	endbr64 
+      84:	e8 00 00 00 00       	callq  89 <compare_single+0x9>
+      89:	55                   	push   %rbp
+	return 1;
+}
+      8a:	b8 01 00 00 00       	mov    $0x1,%eax
+{
+      8f:	48 89 e5             	mov    %rsp,%rbp
+}
+      92:	5d                   	pop    %rbp
+      93:	c3                   	retq   
+      94:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+      9b:	00 00 00 00 
+      9f:	90                   	nop
+
+00000000000000a0 <destroy_super_work>:
+{
+      a0:	f3 0f 1e fa          	endbr64 
+      a4:	e8 00 00 00 00       	callq  a9 <destroy_super_work+0x9>
+      a9:	55                   	push   %rbp
+      aa:	48 89 e5             	mov    %rsp,%rbp
+      ad:	41 54                	push   %r12
+		percpu_free_rwsem(&s->s_writers.rw_sem[i]);
+      af:	4c 8d a7 d8 fa ff ff 	lea    -0x528(%rdi),%r12
+{
+      b6:	53                   	push   %rbx
+      b7:	48 89 fb             	mov    %rdi,%rbx
+		percpu_free_rwsem(&s->s_writers.rw_sem[i]);
+      ba:	48 8d bf 30 fd ff ff 	lea    -0x2d0(%rdi),%rdi
+      c1:	e8 00 00 00 00       	callq  c6 <destroy_super_work+0x26>
+      c6:	48 8d bb b0 fd ff ff 	lea    -0x250(%rbx),%rdi
+      cd:	e8 00 00 00 00       	callq  d2 <destroy_super_work+0x32>
+      d2:	48 8d bb 30 fe ff ff 	lea    -0x1d0(%rbx),%rdi
+      d9:	e8 00 00 00 00       	callq  de <destroy_super_work+0x3e>
+	kfree(s);
+      de:	4c 89 e7             	mov    %r12,%rdi
+      e1:	e8 00 00 00 00       	callq  e6 <destroy_super_work+0x46>
+}
+      e6:	5b                   	pop    %rbx
+      e7:	41 5c                	pop    %r12
+      e9:	5d                   	pop    %rbp
+      ea:	c3                   	retq   
+      eb:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+
+00000000000000f0 <destroy_super_rcu>:
+{
+      f0:	f3 0f 1e fa          	endbr64 
+      f4:	e8 00 00 00 00       	callq  f9 <destroy_super_rcu+0x9>
+	INIT_WORK(&s->destroy_work, destroy_super_work);
+      f9:	48 b8 e0 ff ff ff 0f 	movabs $0xfffffffe0,%rax
+     100:	00 00 00 
+{
+     103:	55                   	push   %rbp
+ * it can be processed by another CPU.
+ */
+static inline bool queue_work(struct workqueue_struct *wq,
+			      struct work_struct *work)
+{
+	return queue_work_on(WORK_CPU_UNBOUND, wq, work);
+     104:	48 8b 35 00 00 00 00 	mov    0x0(%rip),%rsi        # 10b <destroy_super_rcu+0x1b>
+	INIT_WORK(&s->destroy_work, destroy_super_work);
+     10b:	48 8d 57 10          	lea    0x10(%rdi),%rdx
+     10f:	48 89 47 10          	mov    %rax,0x10(%rdi)
+     113:	48 8d 47 18          	lea    0x18(%rdi),%rax
+{
+	switch (size) {
+	case 1: *(volatile __u8 *)p = *(__u8 *)res; break;
+	case 2: *(volatile __u16 *)p = *(__u16 *)res; break;
+	case 4: *(volatile __u32 *)p = *(__u32 *)res; break;
+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+     117:	48 89 47 18          	mov    %rax,0x18(%rdi)
+	struct list_head name = LIST_HEAD_INIT(name)
+
+static inline void INIT_LIST_HEAD(struct list_head *list)
+{
+	WRITE_ONCE(list->next, list);
+	list->prev = list;
+     11b:	48 89 47 20          	mov    %rax,0x20(%rdi)
+{
+     11f:	48 89 e5             	mov    %rsp,%rbp
+	INIT_WORK(&s->destroy_work, destroy_super_work);
+     122:	48 c7 47 28 00 00 00 	movq   $0x0,0x28(%rdi)
+     129:	00 
+     12a:	bf 00 20 00 00       	mov    $0x2000,%edi
+     12f:	e8 00 00 00 00       	callq  134 <destroy_super_rcu+0x44>
+}
+     134:	5d                   	pop    %rbp
+     135:	c3                   	retq   
+     136:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+     13d:	00 00 00 
+
+0000000000000140 <generic_shutdown_super>:
+{
+     140:	f3 0f 1e fa          	endbr64 
+     144:	e8 00 00 00 00       	callq  149 <generic_shutdown_super+0x9>
+     149:	55                   	push   %rbp
+     14a:	48 89 e5             	mov    %rsp,%rbp
+     14d:	41 54                	push   %r12
+     14f:	53                   	push   %rbx
+	if (sb->s_root) {
+     150:	48 83 7f 68 00       	cmpq   $0x0,0x68(%rdi)
+{
+     155:	48 89 fb             	mov    %rdi,%rbx
+	if (sb->s_root) {
+     158:	74 73                	je     1cd <generic_shutdown_super+0x8d>
+	const struct super_operations *sop = sb->s_op;
+     15a:	4c 8b 67 30          	mov    0x30(%rdi),%r12
+		shrink_dcache_for_umount(sb);
+     15e:	e8 00 00 00 00       	callq  163 <generic_shutdown_super+0x23>
+		sync_filesystem(sb);
+     163:	48 89 df             	mov    %rbx,%rdi
+     166:	e8 00 00 00 00       	callq  16b <generic_shutdown_super+0x2b>
+		sb->s_flags &= ~SB_ACTIVE;
+     16b:	48 81 63 50 ff ff ff 	andq   $0xffffffffbfffffff,0x50(%rbx)
+     172:	bf 
+		fsnotify_unmount_inodes(sb);
+     173:	48 89 df             	mov    %rbx,%rdi
+     176:	e8 00 00 00 00       	callq  17b <generic_shutdown_super+0x3b>
+		cgroup_writeback_umount();
+     17b:	e8 00 00 00 00       	callq  180 <generic_shutdown_super+0x40>
+		evict_inodes(sb);
+     180:	48 89 df             	mov    %rbx,%rdi
+     183:	e8 00 00 00 00       	callq  188 <generic_shutdown_super+0x48>
+		if (sb->s_dio_done_wq) {
+     188:	48 8b bb a8 04 00 00 	mov    0x4a8(%rbx),%rdi
+     18f:	48 85 ff             	test   %rdi,%rdi
+     192:	74 10                	je     1a4 <generic_shutdown_super+0x64>
+			destroy_workqueue(sb->s_dio_done_wq);
+     194:	e8 00 00 00 00       	callq  199 <generic_shutdown_super+0x59>
+			sb->s_dio_done_wq = NULL;
+     199:	48 c7 83 a8 04 00 00 	movq   $0x0,0x4a8(%rbx)
+     1a0:	00 00 00 00 
+		if (sop->put_super)
+     1a4:	49 8b 44 24 30       	mov    0x30(%r12),%rax
+     1a9:	48 85 c0             	test   %rax,%rax
+     1ac:	74 08                	je     1b6 <generic_shutdown_super+0x76>
+			sop->put_super(sb);
+     1ae:	48 89 df             	mov    %rbx,%rdi
+     1b1:	e8 00 00 00 00       	callq  1b6 <generic_shutdown_super+0x76>
+	__READ_ONCE_SIZE;
+     1b6:	48 8b 83 88 05 00 00 	mov    0x588(%rbx),%rax
+		if (!list_empty(&sb->s_inodes)) {
+     1bd:	48 8d 93 88 05 00 00 	lea    0x588(%rbx),%rdx
+     1c4:	48 39 c2             	cmp    %rax,%rdx
+     1c7:	0f 85 00 00 00 00    	jne    1cd <generic_shutdown_super+0x8d>
+	raw_spin_lock_init(&(_lock)->rlock);		\
+} while (0)
+
+static __always_inline void spin_lock(spinlock_t *lock)
+{
+	raw_spin_lock(&lock->rlock);
+     1cd:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     1d4:	e8 00 00 00 00       	callq  1d9 <generic_shutdown_super+0x99>
+	h->pprev = NULL;
+}
+
+static inline int hlist_unhashed(const struct hlist_node *h)
+{
+	return !h->pprev;
+     1d9:	48 8b 83 f0 00 00 00 	mov    0xf0(%rbx),%rax
+	n->pprev = LIST_POISON2;
+}
+
+static inline void hlist_del_init(struct hlist_node *n)
+{
+	if (!hlist_unhashed(n)) {
+     1e0:	48 85 c0             	test   %rax,%rax
+     1e3:	74 29                	je     20e <generic_shutdown_super+0xce>
+	struct hlist_node *next = n->next;
+     1e5:	48 8b 93 e8 00 00 00 	mov    0xe8(%rbx),%rdx
+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+     1ec:	48 89 10             	mov    %rdx,(%rax)
+	if (next)
+     1ef:	48 85 d2             	test   %rdx,%rdx
+     1f2:	74 04                	je     1f8 <generic_shutdown_super+0xb8>
+		next->pprev = pprev;
+     1f4:	48 89 42 08          	mov    %rax,0x8(%rdx)
+	h->next = NULL;
+     1f8:	48 c7 83 e8 00 00 00 	movq   $0x0,0xe8(%rbx)
+     1ff:	00 00 00 00 
+	h->pprev = NULL;
+     203:	48 c7 83 f0 00 00 00 	movq   $0x0,0xf0(%rbx)
+     20a:	00 00 00 00 
+	PVOP_VCALL2(pv_lock_ops.queued_spin_lock_slowpath, lock, val);
+}
+
+static __always_inline void pv_queued_spin_unlock(struct qspinlock *lock)
+{
+	PVOP_VCALLEE1(pv_lock_ops.queued_spin_unlock, lock);
+     20e:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     215:	ff 14 25 00 00 00 00 	callq  *0x0
+	up_write(&sb->s_umount);
+     21c:	48 8d 7b 70          	lea    0x70(%rbx),%rdi
+     220:	e8 00 00 00 00       	callq  225 <generic_shutdown_super+0xe5>
+	if (sb->s_bdi != &noop_backing_dev_info) {
+     225:	48 8b bb d8 00 00 00 	mov    0xd8(%rbx),%rdi
+     22c:	48 81 ff 00 00 00 00 	cmp    $0x0,%rdi
+     233:	74 10                	je     245 <generic_shutdown_super+0x105>
+		bdi_put(sb->s_bdi);
+     235:	e8 00 00 00 00       	callq  23a <generic_shutdown_super+0xfa>
+		sb->s_bdi = &noop_backing_dev_info;
+     23a:	48 c7 83 d8 00 00 00 	movq   $0x0,0xd8(%rbx)
+     241:	00 00 00 00 
+}
+     245:	5b                   	pop    %rbx
+     246:	41 5c                	pop    %r12
+     248:	5d                   	pop    %rbp
+     249:	c3                   	retq   
+     24a:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+
+0000000000000250 <super_cache_count>:
+{
+     250:	f3 0f 1e fa          	endbr64 
+     254:	e8 00 00 00 00       	callq  259 <super_cache_count+0x9>
+	if (!(sb->s_flags & SB_BORN))
+     259:	48 8b 87 f8 fb ff ff 	mov    -0x408(%rdi),%rax
+     260:	25 00 00 00 20       	and    $0x20000000,%eax
+     265:	0f 84 c9 00 00 00    	je     334 <super_cache_count+0xe4>
+{
+     26b:	55                   	push   %rbp
+     26c:	48 89 e5             	mov    %rsp,%rbp
+     26f:	41 56                	push   %r14
+     271:	41 55                	push   %r13
+     273:	49 89 f5             	mov    %rsi,%r13
+     276:	41 54                	push   %r12
+     278:	49 89 fc             	mov    %rdi,%r12
+     27b:	53                   	push   %rbx
+	if (sb->s_op && sb->s_op->nr_cached_objects)
+     27c:	48 8b 87 d8 fb ff ff 	mov    -0x428(%rdi),%rax
+     283:	45 31 f6             	xor    %r14d,%r14d
+     286:	48 85 c0             	test   %rax,%rax
+     289:	74 1b                	je     2a6 <super_cache_count+0x56>
+     28b:	48 8b 80 b8 00 00 00 	mov    0xb8(%rax),%rax
+     292:	48 85 c0             	test   %rax,%rax
+     295:	74 0f                	je     2a6 <super_cache_count+0x56>
+	sb = container_of(shrink, struct super_block, s_shrink);
+     297:	48 8d bf a8 fb ff ff 	lea    -0x458(%rdi),%rdi
+		total_objects = sb->s_op->nr_cached_objects(sb, sc);
+     29e:	e8 00 00 00 00       	callq  2a3 <super_cache_count+0x53>
+     2a3:	49 89 c6             	mov    %rax,%r14
+unsigned long list_lru_count_node(struct list_lru *lru, int nid);
+
+static inline unsigned long list_lru_shrink_count(struct list_lru *lru,
+						  struct shrink_control *sc)
+{
+	return list_lru_count_one(lru, sc->nid, sc->memcg);
+     2a6:	49 8b 55 20          	mov    0x20(%r13),%rdx
+     2aa:	41 8b 75 18          	mov    0x18(%r13),%esi
+	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
+     2ae:	49 8d 7c 24 68       	lea    0x68(%r12),%rdi
+     2b3:	e8 00 00 00 00       	callq  2b8 <super_cache_count+0x68>
+     2b8:	49 8b 55 20          	mov    0x20(%r13),%rdx
+     2bc:	41 8b 75 18          	mov    0x18(%r13),%esi
+	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
+     2c0:	49 8d bc 24 a8 00 00 	lea    0xa8(%r12),%rdi
+     2c7:	00 
+     2c8:	48 89 c3             	mov    %rax,%rbx
+     2cb:	e8 00 00 00 00       	callq  2d0 <super_cache_count+0x80>
+     2d0:	4a 8d 0c 33          	lea    (%rbx,%r14,1),%rcx
+
+extern int sysctl_vfs_cache_pressure;
+
+static inline unsigned long vfs_pressure_ratio(unsigned long val)
+{
+	return mult_frac(val, sysctl_vfs_cache_pressure, 100);
+     2d4:	48 63 3d 00 00 00 00 	movslq 0x0(%rip),%rdi        # 2db <super_cache_count+0x8b>
+}
+     2db:	5b                   	pop    %rbx
+     2dc:	49 b8 c3 f5 28 5c 8f 	movabs $0x28f5c28f5c28f5c3,%r8
+     2e3:	c2 f5 28 
+	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
+     2e6:	48 01 c1             	add    %rax,%rcx
+}
+     2e9:	41 5c                	pop    %r12
+     2eb:	41 5d                	pop    %r13
+     2ed:	48 89 ca             	mov    %rcx,%rdx
+     2f0:	41 5e                	pop    %r14
+     2f2:	5d                   	pop    %rbp
+     2f3:	48 c1 ea 02          	shr    $0x2,%rdx
+     2f7:	48 89 d0             	mov    %rdx,%rax
+     2fa:	49 f7 e0             	mul    %r8
+     2fd:	48 89 d6             	mov    %rdx,%rsi
+     300:	48 83 e2 fc          	and    $0xfffffffffffffffc,%rdx
+     304:	48 c1 ee 02          	shr    $0x2,%rsi
+     308:	48 01 f2             	add    %rsi,%rdx
+     30b:	48 0f af f7          	imul   %rdi,%rsi
+     30f:	48 8d 04 92          	lea    (%rdx,%rdx,4),%rax
+     313:	48 c1 e0 02          	shl    $0x2,%rax
+     317:	48 29 c1             	sub    %rax,%rcx
+     31a:	48 89 ca             	mov    %rcx,%rdx
+     31d:	48 0f af d7          	imul   %rdi,%rdx
+     321:	48 c1 ea 02          	shr    $0x2,%rdx
+     325:	48 89 d0             	mov    %rdx,%rax
+     328:	49 f7 e0             	mul    %r8
+     32b:	48 c1 ea 02          	shr    $0x2,%rdx
+     32f:	48 8d 04 32          	lea    (%rdx,%rsi,1),%rax
+     333:	c3                   	retq   
+     334:	c3                   	retq   
+     335:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     33c:	00 00 00 00 
+
+0000000000000340 <get_anon_bdev>:
+{
+     340:	f3 0f 1e fa          	endbr64 
+     344:	e8 00 00 00 00       	callq  349 <get_anon_bdev+0x9>
+     349:	55                   	push   %rbp
+     34a:	48 89 e5             	mov    %rsp,%rbp
+     34d:	41 54                	push   %r12
+     34f:	49 89 fc             	mov    %rdi,%r12
+     352:	53                   	push   %rbx
+     353:	48 83 ec 10          	sub    $0x10,%rsp
+     357:	65 48 8b 04 25 28 00 	mov    %gs:0x28,%rax
+     35e:	00 00 
+     360:	48 89 45 e8          	mov    %rax,-0x18(%rbp)
+     364:	31 c0                	xor    %eax,%eax
+     366:	eb 4c                	jmp    3b4 <get_anon_bdev+0x74>
+     368:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     36f:	e8 00 00 00 00       	callq  374 <get_anon_bdev+0x34>
+	error = ida_get_new_above(&unnamed_dev_ida, unnamed_dev_start, &dev);
+     374:	8b 35 00 00 00 00    	mov    0x0(%rip),%esi        # 37a <get_anon_bdev+0x3a>
+     37a:	48 8d 55 e4          	lea    -0x1c(%rbp),%rdx
+     37e:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     385:	e8 00 00 00 00       	callq  38a <get_anon_bdev+0x4a>
+     38a:	41 89 c0             	mov    %eax,%r8d
+	if (!error)
+     38d:	85 c0                	test   %eax,%eax
+     38f:	75 0c                	jne    39d <get_anon_bdev+0x5d>
+		unnamed_dev_start = dev + 1;
+     391:	8b 45 e4             	mov    -0x1c(%rbp),%eax
+     394:	83 c0 01             	add    $0x1,%eax
+     397:	89 05 00 00 00 00    	mov    %eax,0x0(%rip)        # 39d <get_anon_bdev+0x5d>
+     39d:	48 c7 c3 00 00 00 00 	mov    $0x0,%rbx
+     3a4:	48 89 df             	mov    %rbx,%rdi
+     3a7:	ff 14 25 00 00 00 00 	callq  *0x0
+	if (error == -EAGAIN)
+     3ae:	41 83 f8 f5          	cmp    $0xfffffff5,%r8d
+     3b2:	75 36                	jne    3ea <get_anon_bdev+0xaa>
+	if (ida_pre_get(&unnamed_dev_ida, GFP_ATOMIC) == 0)
+     3b4:	be 20 00 48 00       	mov    $0x480020,%esi
+     3b9:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     3c0:	e8 00 00 00 00       	callq  3c5 <get_anon_bdev+0x85>
+     3c5:	85 c0                	test   %eax,%eax
+     3c7:	75 9f                	jne    368 <get_anon_bdev+0x28>
+		return -ENOMEM;
+     3c9:	41 b8 f4 ff ff ff    	mov    $0xfffffff4,%r8d
+}
+     3cf:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
+     3d3:	65 48 33 04 25 28 00 	xor    %gs:0x28,%rax
+     3da:	00 00 
+     3dc:	75 65                	jne    443 <get_anon_bdev+0x103>
+     3de:	48 83 c4 10          	add    $0x10,%rsp
+     3e2:	44 89 c0             	mov    %r8d,%eax
+     3e5:	5b                   	pop    %rbx
+     3e6:	41 5c                	pop    %r12
+     3e8:	5d                   	pop    %rbp
+     3e9:	c3                   	retq   
+	else if (error)
+     3ea:	45 85 c0             	test   %r8d,%r8d
+     3ed:	75 15                	jne    404 <get_anon_bdev+0xc4>
+	if (dev >= (1 << MINORBITS)) {
+     3ef:	8b 45 e4             	mov    -0x1c(%rbp),%eax
+     3f2:	3d ff ff 0f 00       	cmp    $0xfffff,%eax
+     3f7:	7f 13                	jg     40c <get_anon_bdev+0xcc>
+	*p = MKDEV(0, dev & MINORMASK);
+     3f9:	25 ff ff 0f 00       	and    $0xfffff,%eax
+     3fe:	41 89 04 24          	mov    %eax,(%r12)
+	return 0;
+     402:	eb cb                	jmp    3cf <get_anon_bdev+0x8f>
+		return -EAGAIN;
+     404:	41 b8 f5 ff ff ff    	mov    $0xfffffff5,%r8d
+     40a:	eb c3                	jmp    3cf <get_anon_bdev+0x8f>
+     40c:	e8 00 00 00 00       	callq  411 <get_anon_bdev+0xd1>
+		ida_remove(&unnamed_dev_ida, dev);
+     411:	8b 75 e4             	mov    -0x1c(%rbp),%esi
+     414:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     41b:	e8 00 00 00 00       	callq  420 <get_anon_bdev+0xe0>
+		if (unnamed_dev_start > dev)
+     420:	8b 45 e4             	mov    -0x1c(%rbp),%eax
+     423:	39 05 00 00 00 00    	cmp    %eax,0x0(%rip)        # 429 <get_anon_bdev+0xe9>
+     429:	7e 06                	jle    431 <get_anon_bdev+0xf1>
+			unnamed_dev_start = dev;
+     42b:	89 05 00 00 00 00    	mov    %eax,0x0(%rip)        # 431 <get_anon_bdev+0xf1>
+     431:	48 89 df             	mov    %rbx,%rdi
+     434:	ff 14 25 00 00 00 00 	callq  *0x0
+		return -EMFILE;
+     43b:	41 b8 e8 ff ff ff    	mov    $0xffffffe8,%r8d
+     441:	eb 8c                	jmp    3cf <get_anon_bdev+0x8f>
+}
+     443:	e8 00 00 00 00       	callq  448 <get_anon_bdev+0x108>
+     448:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+     44f:	00 
+
+0000000000000450 <set_anon_super>:
+{
+     450:	f3 0f 1e fa          	endbr64 
+     454:	e8 00 00 00 00       	callq  459 <set_anon_super+0x9>
+     459:	55                   	push   %rbp
+	return get_anon_bdev(&s->s_dev);
+     45a:	48 83 c7 10          	add    $0x10,%rdi
+{
+     45e:	48 89 e5             	mov    %rsp,%rbp
+	return get_anon_bdev(&s->s_dev);
+     461:	e8 00 00 00 00       	callq  466 <set_anon_super+0x16>
+}
+     466:	5d                   	pop    %rbp
+     467:	c3                   	retq   
+     468:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+     46f:	00 
+
+0000000000000470 <ns_set_super>:
+{
+     470:	f3 0f 1e fa          	endbr64 
+     474:	e8 00 00 00 00       	callq  479 <ns_set_super+0x9>
+     479:	55                   	push   %rbp
+	return get_anon_bdev(&s->s_dev);
+     47a:	48 83 c7 10          	add    $0x10,%rdi
+	sb->s_fs_info = data;
+     47e:	48 89 b7 f8 03 00 00 	mov    %rsi,0x3f8(%rdi)
+{
+     485:	48 89 e5             	mov    %rsp,%rbp
+	return get_anon_bdev(&s->s_dev);
+     488:	e8 00 00 00 00       	callq  48d <ns_set_super+0x1d>
+}
+     48d:	5d                   	pop    %rbp
+     48e:	c3                   	retq   
+     48f:	90                   	nop
+
+0000000000000490 <free_anon_bdev>:
+{
+     490:	f3 0f 1e fa          	endbr64 
+     494:	e8 00 00 00 00       	callq  499 <free_anon_bdev+0x9>
+     499:	55                   	push   %rbp
+     49a:	48 89 e5             	mov    %rsp,%rbp
+     49d:	53                   	push   %rbx
+	int slot = MINOR(dev);
+     49e:	89 fb                	mov    %edi,%ebx
+     4a0:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     4a7:	81 e3 ff ff 0f 00    	and    $0xfffff,%ebx
+     4ad:	e8 00 00 00 00       	callq  4b2 <free_anon_bdev+0x22>
+	ida_remove(&unnamed_dev_ida, slot);
+     4b2:	89 de                	mov    %ebx,%esi
+     4b4:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     4bb:	e8 00 00 00 00       	callq  4c0 <free_anon_bdev+0x30>
+	if (slot < unnamed_dev_start)
+     4c0:	39 1d 00 00 00 00    	cmp    %ebx,0x0(%rip)        # 4c6 <free_anon_bdev+0x36>
+     4c6:	7e 06                	jle    4ce <free_anon_bdev+0x3e>
+		unnamed_dev_start = slot;
+     4c8:	89 1d 00 00 00 00    	mov    %ebx,0x0(%rip)        # 4ce <free_anon_bdev+0x3e>
+     4ce:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     4d5:	ff 14 25 00 00 00 00 	callq  *0x0
+}
+     4dc:	5b                   	pop    %rbx
+     4dd:	5d                   	pop    %rbp
+     4de:	c3                   	retq   
+     4df:	90                   	nop
+
+00000000000004e0 <kill_anon_super>:
+{
+     4e0:	f3 0f 1e fa          	endbr64 
+     4e4:	e8 00 00 00 00       	callq  4e9 <kill_anon_super+0x9>
+     4e9:	55                   	push   %rbp
+     4ea:	48 89 e5             	mov    %rsp,%rbp
+     4ed:	41 54                	push   %r12
+	dev_t dev = sb->s_dev;
+     4ef:	44 8b 67 10          	mov    0x10(%rdi),%r12d
+	generic_shutdown_super(sb);
+     4f3:	e8 00 00 00 00       	callq  4f8 <kill_anon_super+0x18>
+	free_anon_bdev(dev);
+     4f8:	44 89 e7             	mov    %r12d,%edi
+     4fb:	e8 00 00 00 00       	callq  500 <kill_anon_super+0x20>
+}
+     500:	41 5c                	pop    %r12
+     502:	5d                   	pop    %rbp
+     503:	c3                   	retq   
+     504:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     50b:	00 00 00 00 
+     50f:	90                   	nop
+
+0000000000000510 <kill_litter_super>:
+{
+     510:	f3 0f 1e fa          	endbr64 
+     514:	e8 00 00 00 00       	callq  519 <kill_litter_super+0x9>
+     519:	55                   	push   %rbp
+     51a:	48 89 e5             	mov    %rsp,%rbp
+     51d:	41 55                	push   %r13
+     51f:	41 54                	push   %r12
+     521:	49 89 fc             	mov    %rdi,%r12
+	if (sb->s_root)
+     524:	48 8b 7f 68          	mov    0x68(%rdi),%rdi
+     528:	48 85 ff             	test   %rdi,%rdi
+     52b:	74 05                	je     532 <kill_litter_super+0x22>
+		d_genocide(sb->s_root);
+     52d:	e8 00 00 00 00       	callq  532 <kill_litter_super+0x22>
+	dev_t dev = sb->s_dev;
+     532:	45 8b 6c 24 10       	mov    0x10(%r12),%r13d
+	generic_shutdown_super(sb);
+     537:	4c 89 e7             	mov    %r12,%rdi
+     53a:	e8 00 00 00 00       	callq  53f <kill_litter_super+0x2f>
+	free_anon_bdev(dev);
+     53f:	44 89 ef             	mov    %r13d,%edi
+     542:	e8 00 00 00 00       	callq  547 <kill_litter_super+0x37>
+}
+     547:	41 5c                	pop    %r12
+     549:	41 5d                	pop    %r13
+     54b:	5d                   	pop    %rbp
+     54c:	c3                   	retq   
+     54d:	0f 1f 00             	nopl   (%rax)
+
+0000000000000550 <kill_block_super>:
+{
+     550:	f3 0f 1e fa          	endbr64 
+     554:	e8 00 00 00 00       	callq  559 <kill_block_super+0x9>
+     559:	55                   	push   %rbp
+     55a:	48 89 e5             	mov    %rsp,%rbp
+     55d:	41 54                	push   %r12
+     55f:	53                   	push   %rbx
+	struct block_device *bdev = sb->s_bdev;
+     560:	4c 8b a7 d0 00 00 00 	mov    0xd0(%rdi),%r12
+	fmode_t mode = sb->s_mode;
+     567:	8b 9f 14 04 00 00    	mov    0x414(%rdi),%ebx
+	bdev->bd_super = NULL;
+     56d:	49 c7 44 24 10 00 00 	movq   $0x0,0x10(%r12)
+     574:	00 00 
+	generic_shutdown_super(sb);
+     576:	e8 00 00 00 00       	callq  57b <kill_block_super+0x2b>
+	sync_blockdev(bdev);
+     57b:	4c 89 e7             	mov    %r12,%rdi
+     57e:	e8 00 00 00 00       	callq  583 <kill_block_super+0x33>
+	WARN_ON_ONCE(!(mode & FMODE_EXCL));
+     583:	f6 c3 80             	test   $0x80,%bl
+     586:	74 13                	je     59b <kill_block_super+0x4b>
+	blkdev_put(bdev, mode | FMODE_EXCL);
+     588:	89 de                	mov    %ebx,%esi
+     58a:	4c 89 e7             	mov    %r12,%rdi
+     58d:	40 80 ce 80          	or     $0x80,%sil
+     591:	e8 00 00 00 00       	callq  596 <kill_block_super+0x46>
+}
+     596:	5b                   	pop    %rbx
+     597:	41 5c                	pop    %r12
+     599:	5d                   	pop    %rbp
+     59a:	c3                   	retq   
+	WARN_ON_ONCE(!(mode & FMODE_EXCL));
+     59b:	0f 0b                	ud2    
+     59d:	eb e9                	jmp    588 <kill_block_super+0x38>
+     59f:	90                   	nop
+
+00000000000005a0 <super_setup_bdi_name>:
+/*
+ * Setup private BDI for given superblock. It gets automatically cleaned up
+ * in generic_shutdown_super().
+ */
+int super_setup_bdi_name(struct super_block *sb, char *fmt, ...)
+{
+     5a0:	f3 0f 1e fa          	endbr64 
+     5a4:	e8 00 00 00 00       	callq  5a9 <super_setup_bdi_name+0x9>
+     5a9:	55                   	push   %rbp
+     5aa:	48 89 e5             	mov    %rsp,%rbp
+     5ad:	41 55                	push   %r13
+     5af:	49 89 f5             	mov    %rsi,%r13
+void bdi_unregister(struct backing_dev_info *bdi);
+
+struct backing_dev_info *bdi_alloc_node(gfp_t gfp_mask, int node_id);
+static inline struct backing_dev_info *bdi_alloc(gfp_t gfp_mask)
+{
+	return bdi_alloc_node(gfp_mask, NUMA_NO_NODE);
+     5b2:	be ff ff ff ff       	mov    $0xffffffff,%esi
+     5b7:	41 54                	push   %r12
+     5b9:	53                   	push   %rbx
+     5ba:	48 89 fb             	mov    %rdi,%rbx
+     5bd:	bf c0 00 60 00       	mov    $0x6000c0,%edi
+     5c2:	48 83 ec 58          	sub    $0x58,%rsp
+     5c6:	48 89 54 24 38       	mov    %rdx,0x38(%rsp)
+     5cb:	48 89 4c 24 40       	mov    %rcx,0x40(%rsp)
+     5d0:	4c 89 44 24 48       	mov    %r8,0x48(%rsp)
+     5d5:	4c 89 4c 24 50       	mov    %r9,0x50(%rsp)
+     5da:	65 48 8b 04 25 28 00 	mov    %gs:0x28,%rax
+     5e1:	00 00 
+     5e3:	48 89 44 24 20       	mov    %rax,0x20(%rsp)
+     5e8:	31 c0                	xor    %eax,%eax
+     5ea:	e8 00 00 00 00       	callq  5ef <super_setup_bdi_name+0x4f>
+	struct backing_dev_info *bdi;
+	int err;
+	va_list args;
+
+	bdi = bdi_alloc(GFP_KERNEL);
+	if (!bdi)
+     5ef:	48 85 c0             	test   %rax,%rax
+     5f2:	0f 84 83 00 00 00    	je     67b <super_setup_bdi_name+0xdb>
+     5f8:	49 89 c4             	mov    %rax,%r12
+		return -ENOMEM;
+
+	bdi->name = sb->s_type->name;
+     5fb:	48 8b 43 28          	mov    0x28(%rbx),%rax
+
+	va_start(args, fmt);
+	err = bdi_register_va(bdi, fmt, args);
+     5ff:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
+     604:	4c 89 ee             	mov    %r13,%rsi
+     607:	4c 89 e7             	mov    %r12,%rdi
+	bdi->name = sb->s_type->name;
+     60a:	48 8b 00             	mov    (%rax),%rax
+	va_start(args, fmt);
+     60d:	c7 44 24 08 10 00 00 	movl   $0x10,0x8(%rsp)
+     614:	00 
+	bdi->name = sb->s_type->name;
+     615:	49 89 44 24 30       	mov    %rax,0x30(%r12)
+	va_start(args, fmt);
+     61a:	48 8d 45 10          	lea    0x10(%rbp),%rax
+     61e:	48 89 44 24 10       	mov    %rax,0x10(%rsp)
+     623:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
+     628:	48 89 44 24 18       	mov    %rax,0x18(%rsp)
+	err = bdi_register_va(bdi, fmt, args);
+     62d:	e8 00 00 00 00       	callq  632 <super_setup_bdi_name+0x92>
+	va_end(args);
+	if (err) {
+     632:	85 c0                	test   %eax,%eax
+     634:	75 2f                	jne    665 <super_setup_bdi_name+0xc5>
+		bdi_put(bdi);
+		return err;
+	}
+	WARN_ON(sb->s_bdi != &noop_backing_dev_info);
+     636:	48 81 bb d8 00 00 00 	cmpq   $0x0,0xd8(%rbx)
+     63d:	00 00 00 00 
+     641:	75 34                	jne    677 <super_setup_bdi_name+0xd7>
+	sb->s_bdi = bdi;
+     643:	4c 89 a3 d8 00 00 00 	mov    %r12,0xd8(%rbx)
+
+	return 0;
+}
+     64a:	48 8b 4c 24 20       	mov    0x20(%rsp),%rcx
+     64f:	65 48 33 0c 25 28 00 	xor    %gs:0x28,%rcx
+     656:	00 00 
+     658:	75 28                	jne    682 <super_setup_bdi_name+0xe2>
+     65a:	48 83 c4 58          	add    $0x58,%rsp
+     65e:	5b                   	pop    %rbx
+     65f:	41 5c                	pop    %r12
+     661:	41 5d                	pop    %r13
+     663:	5d                   	pop    %rbp
+     664:	c3                   	retq   
+		bdi_put(bdi);
+     665:	4c 89 e7             	mov    %r12,%rdi
+     668:	89 44 24 04          	mov    %eax,0x4(%rsp)
+     66c:	e8 00 00 00 00       	callq  671 <super_setup_bdi_name+0xd1>
+		return err;
+     671:	8b 44 24 04          	mov    0x4(%rsp),%eax
+     675:	eb d3                	jmp    64a <super_setup_bdi_name+0xaa>
+	WARN_ON(sb->s_bdi != &noop_backing_dev_info);
+     677:	0f 0b                	ud2    
+     679:	eb c8                	jmp    643 <super_setup_bdi_name+0xa3>
+		return -ENOMEM;
+     67b:	b8 f4 ff ff ff       	mov    $0xfffffff4,%eax
+     680:	eb c8                	jmp    64a <super_setup_bdi_name+0xaa>
+}
+     682:	e8 00 00 00 00       	callq  687 <super_setup_bdi_name+0xe7>
+     687:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+     68e:	00 00 
+
+0000000000000690 <super_setup_bdi>:
+/*
+ * Setup private BDI for given superblock. I gets automatically cleaned up
+ * in generic_shutdown_super().
+ */
+int super_setup_bdi(struct super_block *sb)
+{
+     690:	f3 0f 1e fa          	endbr64 
+     694:	e8 00 00 00 00       	callq  699 <super_setup_bdi+0x9>
+     699:	55                   	push   %rbp
+ *
+ * Atomically adds @i to @v and returns @i + @v
+ */
+static __always_inline long arch_atomic64_add_return(long i, atomic64_t *v)
+{
+	return i + xadd(&v->counter, i);
+     69a:	b9 01 00 00 00       	mov    $0x1,%ecx
+     69f:	48 89 e5             	mov    %rsp,%rbp
+     6a2:	f0 48 0f c1 0d 00 00 	lock xadd %rcx,0x0(%rip)        # 6ab <super_setup_bdi+0x1b>
+     6a9:	00 00 
+	static atomic_long_t bdi_seq = ATOMIC_LONG_INIT(0);
+
+	return super_setup_bdi_name(sb, "%.28s-%ld", sb->s_type->name,
+     6ab:	48 8b 47 28          	mov    0x28(%rdi),%rax
+     6af:	48 83 c1 01          	add    $0x1,%rcx
+     6b3:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+     6ba:	48 8b 10             	mov    (%rax),%rdx
+     6bd:	e8 00 00 00 00       	callq  6c2 <super_setup_bdi+0x32>
+				    atomic_long_inc_return(&bdi_seq));
+}
+     6c2:	5d                   	pop    %rbp
+     6c3:	c3                   	retq   
+     6c4:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     6cb:	00 00 00 00 
+     6cf:	90                   	nop
+
+00000000000006d0 <__sb_end_write>:
+/*
+ * This is an internal function, please use sb_end_{write,pagefault,intwrite}
+ * instead.
+ */
+void __sb_end_write(struct super_block *sb, int level)
+{
+     6d0:	f3 0f 1e fa          	endbr64 
+     6d4:	e8 00 00 00 00       	callq  6d9 <__sb_end_write+0x9>
+	percpu_up_read(sb->s_writers.rw_sem + level-1);
+     6d9:	48 63 f6             	movslq %esi,%rsi
+     6dc:	48 c1 e6 07          	shl    $0x7,%rsi
+     6e0:	48 8d bc 3e d8 01 00 	lea    0x1d8(%rsi,%rdi,1),%rdi
+     6e7:	00 
+	 */
+	barrier();
+	/*
+	 * Same as in percpu_down_read().
+	 */
+	if (likely(rcu_sync_is_idle(&sem->rss)))
+     6e8:	8b 07                	mov    (%rdi),%eax
+     6ea:	85 c0                	test   %eax,%eax
+     6ec:	75 08                	jne    6f6 <__sb_end_write+0x26>
+		__this_cpu_dec(*sem->read_count);
+     6ee:	48 8b 47 40          	mov    0x40(%rdi),%rax
+     6f2:	65 ff 08             	decl   %gs:(%rax)
+	else
+		__percpu_up_read(sem); /* Unconditional memory barrier */
+	preempt_enable();
+     6f5:	c3                   	retq   
+{
+     6f6:	55                   	push   %rbp
+     6f7:	48 89 e5             	mov    %rsp,%rbp
+		__percpu_up_read(sem); /* Unconditional memory barrier */
+     6fa:	e8 00 00 00 00       	callq  6ff <__sb_end_write+0x2f>
+}
+     6ff:	5d                   	pop    %rbp
+     700:	c3                   	retq   
+     701:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     708:	00 00 00 00 
+     70c:	0f 1f 40 00          	nopl   0x0(%rax)
+
+0000000000000710 <__sb_start_write>:
+/*
+ * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+ * instead.
+ */
+int __sb_start_write(struct super_block *sb, int level, bool wait)
+{
+     710:	f3 0f 1e fa          	endbr64 
+     714:	e8 00 00 00 00       	callq  719 <__sb_start_write+0x9>
+     719:	55                   	push   %rbp
+     71a:	48 63 f6             	movslq %esi,%rsi
+     71d:	48 c1 e6 07          	shl    $0x7,%rsi
+     721:	48 89 e5             	mov    %rsp,%rbp
+     724:	41 54                	push   %r12
+     726:	4c 8d a4 3e d8 01 00 	lea    0x1d8(%rsi,%rdi,1),%r12
+     72d:	00 
+				force_trylock = true;
+				break;
+			}
+	}
+#endif
+	if (wait && !force_trylock)
+     72e:	84 d2                	test   %dl,%dl
+     730:	75 19                	jne    74b <__sb_start_write+0x3b>
+	__this_cpu_inc(*sem->read_count);
+     732:	49 8b 44 24 40       	mov    0x40(%r12),%rax
+     737:	65 ff 00             	incl   %gs:(%rax)
+	if (unlikely(!rcu_sync_is_idle(&sem->rss)))
+     73a:	41 8b 14 24          	mov    (%r12),%edx
+	int ret = 1;
+     73e:	b8 01 00 00 00       	mov    $0x1,%eax
+	if (unlikely(!rcu_sync_is_idle(&sem->rss)))
+     743:	85 d2                	test   %edx,%edx
+     745:	75 22                	jne    769 <__sb_start_write+0x59>
+	else
+		ret = percpu_down_read_trylock(sb->s_writers.rw_sem + level-1);
+
+	WARN_ON(force_trylock && !ret);
+	return ret;
+}
+     747:	41 5c                	pop    %r12
+     749:	5d                   	pop    %rbp
+     74a:	c3                   	retq   
+	might_sleep();
+     74b:	e8 00 00 00 00       	callq  750 <__sb_start_write+0x40>
+	__this_cpu_inc(*sem->read_count);
+     750:	49 8b 44 24 40       	mov    0x40(%r12),%rax
+     755:	65 ff 00             	incl   %gs:(%rax)
+	if (unlikely(!rcu_sync_is_idle(&sem->rss)))
+     758:	41 8b 0c 24          	mov    (%r12),%ecx
+     75c:	85 c9                	test   %ecx,%ecx
+     75e:	75 18                	jne    778 <__sb_start_write+0x68>
+	preempt_enable();
+     760:	b8 01 00 00 00       	mov    $0x1,%eax
+     765:	41 5c                	pop    %r12
+     767:	5d                   	pop    %rbp
+     768:	c3                   	retq   
+		ret = __percpu_down_read(sem, true); /* Unconditional memory barrier */
+     769:	be 01 00 00 00       	mov    $0x1,%esi
+     76e:	4c 89 e7             	mov    %r12,%rdi
+     771:	e8 00 00 00 00       	callq  776 <__sb_start_write+0x66>
+     776:	eb cf                	jmp    747 <__sb_start_write+0x37>
+		__percpu_down_read(sem, false); /* Unconditional memory barrier */
+     778:	31 f6                	xor    %esi,%esi
+     77a:	4c 89 e7             	mov    %r12,%rdi
+     77d:	e8 00 00 00 00       	callq  782 <__sb_start_write+0x72>
+     782:	eb dc                	jmp    760 <__sb_start_write+0x50>
+     784:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     78b:	00 00 00 00 
+     78f:	90                   	nop
+
+0000000000000790 <__put_super.part.0>:
+static void __put_super(struct super_block *s)
+     790:	e8 00 00 00 00       	callq  795 <__put_super.part.0+0x5>
+     795:	55                   	push   %rbp
+     796:	48 89 e5             	mov    %rsp,%rbp
+     799:	53                   	push   %rbx
+	__list_del(entry->prev, entry->next);
+     79a:	48 8b 17             	mov    (%rdi),%rdx
+     79d:	48 89 fb             	mov    %rdi,%rbx
+     7a0:	48 8b 47 08          	mov    0x8(%rdi),%rax
+	next->prev = prev;
+     7a4:	48 89 42 08          	mov    %rax,0x8(%rdx)
+     7a8:	48 89 10             	mov    %rdx,(%rax)
+		WARN_ON(s->s_dentry_lru.node);
+     7ab:	48 83 bf c0 04 00 00 	cmpq   $0x0,0x4c0(%rdi)
+     7b2:	00 
+     7b3:	48 89 3f             	mov    %rdi,(%rdi)
+	list->prev = list;
+     7b6:	48 89 7f 08          	mov    %rdi,0x8(%rdi)
+     7ba:	75 67                	jne    823 <__put_super.part.0+0x93>
+		WARN_ON(s->s_inode_lru.node);
+     7bc:	48 83 bb 00 05 00 00 	cmpq   $0x0,0x500(%rbx)
+     7c3:	00 
+     7c4:	75 69                	jne    82f <__put_super.part.0+0x9f>
+	__READ_ONCE_SIZE;
+     7c6:	48 8b 83 c0 00 00 00 	mov    0xc0(%rbx),%rax
+		WARN_ON(!list_empty(&s->s_mounts));
+     7cd:	48 8d 93 c0 00 00 00 	lea    0xc0(%rbx),%rdx
+     7d4:	48 39 c2             	cmp    %rax,%rdx
+     7d7:	75 46                	jne    81f <__put_super.part.0+0x8f>
+		security_sb_free(s);
+     7d9:	48 89 df             	mov    %rbx,%rdi
+     7dc:	e8 00 00 00 00       	callq  7e1 <__put_super.part.0+0x51>
+		put_user_ns(s->s_user_ns);
+     7e1:	48 8b bb b8 04 00 00 	mov    0x4b8(%rbx),%rdi
+extern int unshare_userns(unsigned long unshare_flags, struct cred **new_cred);
+extern void __put_user_ns(struct user_namespace *ns);
+
+static inline void put_user_ns(struct user_namespace *ns)
+{
+	if (ns && atomic_dec_and_test(&ns->count))
+     7e8:	48 85 ff             	test   %rdi,%rdi
+     7eb:	74 09                	je     7f6 <__put_super.part.0+0x66>
+ * returns true if the result is 0, or false for all other
+ * cases.
+ */
+static __always_inline bool arch_atomic_dec_and_test(atomic_t *v)
+{
+	GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, "%0", e);
+     7ed:	f0 ff 8f d8 00 00 00 	lock decl 0xd8(%rdi)
+     7f4:	74 22                	je     818 <__put_super.part.0+0x88>
+		kfree(s->s_subtype);
+     7f6:	48 8b bb 40 04 00 00 	mov    0x440(%rbx),%rdi
+     7fd:	e8 00 00 00 00       	callq  802 <__put_super.part.0+0x72>
+		call_rcu(&s->rcu, destroy_super_rcu);
+     802:	48 8d bb 18 05 00 00 	lea    0x518(%rbx),%rdi
+     809:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+     810:	e8 00 00 00 00       	callq  815 <__put_super.part.0+0x85>
+}
+     815:	5b                   	pop    %rbx
+     816:	5d                   	pop    %rbp
+     817:	c3                   	retq   
+		__put_user_ns(ns);
+     818:	e8 00 00 00 00       	callq  81d <__put_super.part.0+0x8d>
+     81d:	eb d7                	jmp    7f6 <__put_super.part.0+0x66>
+		WARN_ON(!list_empty(&s->s_mounts));
+     81f:	0f 0b                	ud2    
+     821:	eb b6                	jmp    7d9 <__put_super.part.0+0x49>
+		WARN_ON(s->s_dentry_lru.node);
+     823:	0f 0b                	ud2    
+		WARN_ON(s->s_inode_lru.node);
+     825:	48 83 bb 00 05 00 00 	cmpq   $0x0,0x500(%rbx)
+     82c:	00 
+     82d:	74 97                	je     7c6 <__put_super.part.0+0x36>
+     82f:	0f 0b                	ud2    
+     831:	eb 93                	jmp    7c6 <__put_super.part.0+0x36>
+     833:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     83a:	00 00 00 00 
+     83e:	66 90                	xchg   %ax,%ax
+
+0000000000000840 <put_super>:
+{
+     840:	e8 00 00 00 00       	callq  845 <put_super+0x5>
+     845:	55                   	push   %rbp
+     846:	48 89 e5             	mov    %rsp,%rbp
+     849:	41 54                	push   %r12
+     84b:	49 89 fc             	mov    %rdi,%r12
+     84e:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     855:	e8 00 00 00 00       	callq  85a <put_super+0x1a>
+	if (!--s->s_count) {
+     85a:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+     861:	00 01 
+     863:	75 08                	jne    86d <put_super+0x2d>
+     865:	4c 89 e7             	mov    %r12,%rdi
+     868:	e8 23 ff ff ff       	callq  790 <__put_super.part.0>
+     86d:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     874:	ff 14 25 00 00 00 00 	callq  *0x0
+}
+     87b:	41 5c                	pop    %r12
+     87d:	5d                   	pop    %rbp
+     87e:	c3                   	retq   
+     87f:	90                   	nop
+
+0000000000000880 <deactivate_locked_super>:
+{
+     880:	f3 0f 1e fa          	endbr64 
+     884:	e8 00 00 00 00       	callq  889 <deactivate_locked_super+0x9>
+     889:	55                   	push   %rbp
+     88a:	48 89 e5             	mov    %rsp,%rbp
+     88d:	41 55                	push   %r13
+     88f:	41 54                	push   %r12
+     891:	49 89 fc             	mov    %rdi,%r12
+	struct file_system_type *fs = s->s_type;
+     894:	4c 8b 6f 28          	mov    0x28(%rdi),%r13
+     898:	f0 ff 8f 9c 00 00 00 	lock decl 0x9c(%rdi)
+	if (atomic_dec_and_test(&s->s_active)) {
+     89f:	75 4e                	jne    8ef <deactivate_locked_super+0x6f>
+}
+
+static inline void cleancache_invalidate_fs(struct super_block *sb)
+{
+	if (cleancache_enabled)
+		__cleancache_invalidate_fs(sb);
+     8a1:	e8 00 00 00 00       	callq  8a6 <deactivate_locked_super+0x26>
+		unregister_shrinker(&s->s_shrink);
+     8a6:	49 8d bc 24 58 04 00 	lea    0x458(%r12),%rdi
+     8ad:	00 
+     8ae:	e8 00 00 00 00       	callq  8b3 <deactivate_locked_super+0x33>
+		fs->kill_sb(s);
+     8b3:	49 8b 45 18          	mov    0x18(%r13),%rax
+     8b7:	4c 89 e7             	mov    %r12,%rdi
+     8ba:	e8 00 00 00 00       	callq  8bf <deactivate_locked_super+0x3f>
+		list_lru_destroy(&s->s_dentry_lru);
+     8bf:	49 8d bc 24 c0 04 00 	lea    0x4c0(%r12),%rdi
+     8c6:	00 
+     8c7:	e8 00 00 00 00       	callq  8cc <deactivate_locked_super+0x4c>
+		list_lru_destroy(&s->s_inode_lru);
+     8cc:	49 8d bc 24 00 05 00 	lea    0x500(%r12),%rdi
+     8d3:	00 
+     8d4:	e8 00 00 00 00       	callq  8d9 <deactivate_locked_super+0x59>
+		put_filesystem(fs);
+     8d9:	4c 89 ef             	mov    %r13,%rdi
+     8dc:	e8 00 00 00 00       	callq  8e1 <deactivate_locked_super+0x61>
+		put_super(s);
+     8e1:	4c 89 e7             	mov    %r12,%rdi
+     8e4:	e8 57 ff ff ff       	callq  840 <put_super>
+}
+     8e9:	41 5c                	pop    %r12
+     8eb:	41 5d                	pop    %r13
+     8ed:	5d                   	pop    %rbp
+     8ee:	c3                   	retq   
+		up_write(&s->s_umount);
+     8ef:	48 8d 7f 70          	lea    0x70(%rdi),%rdi
+     8f3:	e8 00 00 00 00       	callq  8f8 <deactivate_locked_super+0x78>
+}
+     8f8:	41 5c                	pop    %r12
+     8fa:	41 5d                	pop    %r13
+     8fc:	5d                   	pop    %rbp
+     8fd:	c3                   	retq   
+     8fe:	66 90                	xchg   %ax,%ax
+
+0000000000000900 <thaw_super_locked>:
+ * @sb: the super to thaw
+ *
+ * Unlocks the filesystem and marks it writeable again after freeze_super().
+ */
+static int thaw_super_locked(struct super_block *sb)
+{
+     900:	e8 00 00 00 00       	callq  905 <thaw_super_locked+0x5>
+     905:	55                   	push   %rbp
+     906:	48 89 e5             	mov    %rsp,%rbp
+     909:	41 57                	push   %r15
+     90b:	41 56                	push   %r14
+     90d:	41 55                	push   %r13
+     90f:	41 54                	push   %r12
+     911:	49 89 fc             	mov    %rdi,%r12
+     914:	53                   	push   %rbx
+	int error;
+
+	if (sb->s_writers.frozen != SB_FREEZE_COMPLETE) {
+     915:	83 bf 38 02 00 00 04 	cmpl   $0x4,0x238(%rdi)
+     91c:	0f 85 c0 00 00 00    	jne    9e2 <thaw_super_locked+0xe2>
+		up_write(&sb->s_umount);
+		return -EINVAL;
+	}
+
+	if (sb_rdonly(sb)) {
+     922:	f6 47 50 01          	testb  $0x1,0x50(%rdi)
+     926:	0f 85 a6 00 00 00    	jne    9d2 <thaw_super_locked+0xd2>
+
+DECLARE_PER_CPU(struct task_struct *, current_task);
+
+static __always_inline struct task_struct *get_current(void)
+{
+	return this_cpu_read_stable(current_task);
+     92c:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+     933:	00 00 
+					bool read, unsigned long ip)
+{
+	lock_acquire(&sem->rw_sem.dep_map, 0, 1, read, 1, NULL, ip);
+#ifdef CONFIG_RWSEM_SPIN_ON_OWNER
+	if (!read)
+		sem->rw_sem.owner = current;
+     935:	48 89 87 c0 02 00 00 	mov    %rax,0x2c0(%rdi)
+		percpu_rwsem_acquire(sb->s_writers.rw_sem + level, 0, _THIS_IP_);
+     93c:	4c 8d b7 58 02 00 00 	lea    0x258(%rdi),%r14
+     943:	4c 8d bf d8 02 00 00 	lea    0x2d8(%rdi),%r15
+     94a:	48 89 87 40 03 00 00 	mov    %rax,0x340(%rdi)
+     951:	48 8d 9f 58 03 00 00 	lea    0x358(%rdi),%rbx
+     958:	48 89 87 c0 03 00 00 	mov    %rax,0x3c0(%rdi)
+		goto out;
+	}
+
+	lockdep_sb_freeze_acquire(sb);
+
+	if (sb->s_op->unfreeze_fs) {
+     95f:	48 8b 47 30          	mov    0x30(%rdi),%rax
+     963:	48 8b 40 58          	mov    0x58(%rax),%rax
+     967:	48 85 c0             	test   %rax,%rax
+     96a:	74 10                	je     97c <thaw_super_locked+0x7c>
+		error = sb->s_op->unfreeze_fs(sb);
+     96c:	e8 00 00 00 00       	callq  971 <thaw_super_locked+0x71>
+     971:	41 89 c5             	mov    %eax,%r13d
+		if (error) {
+     974:	85 c0                	test   %eax,%eax
+     976:	0f 85 00 00 00 00    	jne    97c <thaw_super_locked+0x7c>
+			up_write(&sb->s_umount);
+			return error;
+		}
+	}
+
+	sb->s_writers.frozen = SB_UNFROZEN;
+     97c:	41 c7 84 24 38 02 00 	movl   $0x0,0x238(%r12)
+     983:	00 00 00 00 00 
+		percpu_up_write(sb->s_writers.rw_sem + level);
+     988:	48 89 df             	mov    %rbx,%rdi
+     98b:	e8 00 00 00 00       	callq  990 <thaw_super_locked+0x90>
+     990:	4c 89 ff             	mov    %r15,%rdi
+     993:	e8 00 00 00 00       	callq  998 <thaw_super_locked+0x98>
+     998:	4c 89 f7             	mov    %r14,%rdi
+     99b:	e8 00 00 00 00       	callq  9a0 <thaw_super_locked+0xa0>
+	sb_freeze_unlock(sb);
+out:
+	wake_up(&sb->s_writers.wait_unfrozen);
+     9a0:	31 c9                	xor    %ecx,%ecx
+     9a2:	ba 01 00 00 00       	mov    $0x1,%edx
+     9a7:	be 03 00 00 00       	mov    $0x3,%esi
+	deactivate_locked_super(sb);
+	return 0;
+     9ac:	45 31 ed             	xor    %r13d,%r13d
+	wake_up(&sb->s_writers.wait_unfrozen);
+     9af:	49 8d bc 24 40 02 00 	lea    0x240(%r12),%rdi
+     9b6:	00 
+     9b7:	e8 00 00 00 00       	callq  9bc <thaw_super_locked+0xbc>
+	deactivate_locked_super(sb);
+     9bc:	4c 89 e7             	mov    %r12,%rdi
+     9bf:	e8 00 00 00 00       	callq  9c4 <thaw_super_locked+0xc4>
+}
+     9c4:	5b                   	pop    %rbx
+     9c5:	44 89 e8             	mov    %r13d,%eax
+     9c8:	41 5c                	pop    %r12
+     9ca:	41 5d                	pop    %r13
+     9cc:	41 5e                	pop    %r14
+     9ce:	41 5f                	pop    %r15
+     9d0:	5d                   	pop    %rbp
+     9d1:	c3                   	retq   
+     9d2:	f3 0f 1e fa          	endbr64 
+		sb->s_writers.frozen = SB_UNFROZEN;
+     9d6:	c7 87 38 02 00 00 00 	movl   $0x0,0x238(%rdi)
+     9dd:	00 00 00 
+		goto out;
+     9e0:	eb be                	jmp    9a0 <thaw_super_locked+0xa0>
+		up_write(&sb->s_umount);
+     9e2:	48 8d 7f 70          	lea    0x70(%rdi),%rdi
+		return -EINVAL;
+     9e6:	41 bd ea ff ff ff    	mov    $0xffffffea,%r13d
+		up_write(&sb->s_umount);
+     9ec:	e8 00 00 00 00       	callq  9f1 <thaw_super_locked+0xf1>
+		return -EINVAL;
+     9f1:	eb d1                	jmp    9c4 <thaw_super_locked+0xc4>
+     9f3:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     9fa:	00 00 00 00 
+     9fe:	66 90                	xchg   %ax,%ax
+
+0000000000000a00 <thaw_super>:
+
+int thaw_super(struct super_block *sb)
+{
+     a00:	f3 0f 1e fa          	endbr64 
+     a04:	e8 00 00 00 00       	callq  a09 <thaw_super+0x9>
+     a09:	55                   	push   %rbp
+     a0a:	48 89 e5             	mov    %rsp,%rbp
+     a0d:	41 54                	push   %r12
+     a0f:	49 89 fc             	mov    %rdi,%r12
+	down_write(&sb->s_umount);
+     a12:	48 8d 7f 70          	lea    0x70(%rdi),%rdi
+     a16:	e8 00 00 00 00       	callq  a1b <thaw_super+0x1b>
+	return thaw_super_locked(sb);
+     a1b:	4c 89 e7             	mov    %r12,%rdi
+     a1e:	e8 dd fe ff ff       	callq  900 <thaw_super_locked>
+}
+     a23:	41 5c                	pop    %r12
+     a25:	5d                   	pop    %rbp
+     a26:	c3                   	retq   
+     a27:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+     a2e:	00 00 
+
+0000000000000a30 <freeze_super>:
+{
+     a30:	f3 0f 1e fa          	endbr64 
+     a34:	e8 00 00 00 00       	callq  a39 <freeze_super+0x9>
+     a39:	55                   	push   %rbp
+     a3a:	48 89 e5             	mov    %rsp,%rbp
+     a3d:	41 57                	push   %r15
+     a3f:	41 56                	push   %r14
+     a41:	41 55                	push   %r13
+     a43:	41 54                	push   %r12
+     a45:	49 89 fc             	mov    %rdi,%r12
+     a48:	53                   	push   %rbx
+     a49:	48 83 ec 10          	sub    $0x10,%rsp
+	asm volatile(LOCK_PREFIX "incl %0"
+     a4d:	f0 ff 87 9c 00 00 00 	lock incl 0x9c(%rdi)
+	down_write(&sb->s_umount);
+     a54:	4c 8d 77 70          	lea    0x70(%rdi),%r14
+     a58:	4c 89 f7             	mov    %r14,%rdi
+     a5b:	e8 00 00 00 00       	callq  a60 <freeze_super+0x30>
+	if (sb->s_writers.frozen != SB_UNFROZEN) {
+     a60:	45 8b ac 24 38 02 00 	mov    0x238(%r12),%r13d
+     a67:	00 
+     a68:	45 85 ed             	test   %r13d,%r13d
+     a6b:	0f 85 14 01 00 00    	jne    b85 <freeze_super+0x155>
+	if (!(sb->s_flags & SB_BORN)) {
+     a71:	49 8b 44 24 50       	mov    0x50(%r12),%rax
+     a76:	a9 00 00 00 20       	test   $0x20000000,%eax
+     a7b:	0f 84 fa 00 00 00    	je     b7b <freeze_super+0x14b>
+	if (sb_rdonly(sb)) {
+     a81:	a8 01                	test   $0x1,%al
+     a83:	0f 85 dc 00 00 00    	jne    b65 <freeze_super+0x135>
+	sb->s_writers.frozen = SB_FREEZE_WRITE;
+     a89:	41 c7 84 24 38 02 00 	movl   $0x1,0x238(%r12)
+     a90:	00 01 00 00 00 
+	up_write(&sb->s_umount);
+     a95:	4c 89 f7             	mov    %r14,%rdi
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     a98:	4d 8d bc 24 d8 02 00 	lea    0x2d8(%r12),%r15
+     a9f:	00 
+     aa0:	49 8d 9c 24 58 03 00 	lea    0x358(%r12),%rbx
+     aa7:	00 
+	up_write(&sb->s_umount);
+     aa8:	e8 00 00 00 00       	callq  aad <freeze_super+0x7d>
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     aad:	49 8d 84 24 58 02 00 	lea    0x258(%r12),%rax
+     ab4:	00 
+     ab5:	48 89 c7             	mov    %rax,%rdi
+     ab8:	48 89 45 d0          	mov    %rax,-0x30(%rbp)
+     abc:	e8 00 00 00 00       	callq  ac1 <freeze_super+0x91>
+	down_write(&sb->s_umount);
+     ac1:	4c 89 f7             	mov    %r14,%rdi
+     ac4:	e8 00 00 00 00       	callq  ac9 <freeze_super+0x99>
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     ac9:	4c 89 ff             	mov    %r15,%rdi
+	sb->s_writers.frozen = SB_FREEZE_PAGEFAULT;
+     acc:	41 c7 84 24 38 02 00 	movl   $0x2,0x238(%r12)
+     ad3:	00 02 00 00 00 
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     ad8:	e8 00 00 00 00       	callq  add <freeze_super+0xad>
+	sync_filesystem(sb);
+     add:	4c 89 e7             	mov    %r12,%rdi
+     ae0:	e8 00 00 00 00       	callq  ae5 <freeze_super+0xb5>
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     ae5:	48 89 df             	mov    %rbx,%rdi
+	sb->s_writers.frozen = SB_FREEZE_FS;
+     ae8:	41 c7 84 24 38 02 00 	movl   $0x3,0x238(%r12)
+     aef:	00 03 00 00 00 
+	percpu_down_write(sb->s_writers.rw_sem + level-1);
+     af4:	e8 00 00 00 00       	callq  af9 <freeze_super+0xc9>
+	if (sb->s_op->freeze_fs) {
+     af9:	49 8b 44 24 30       	mov    0x30(%r12),%rax
+     afe:	48 8b 40 48          	mov    0x48(%rax),%rax
+     b02:	48 85 c0             	test   %rax,%rax
+     b05:	74 10                	je     b17 <freeze_super+0xe7>
+		ret = sb->s_op->freeze_fs(sb);
+     b07:	4c 89 e7             	mov    %r12,%rdi
+     b0a:	e8 00 00 00 00       	callq  b0f <freeze_super+0xdf>
+		if (ret) {
+     b0f:	85 c0                	test   %eax,%eax
+     b11:	0f 85 00 00 00 00    	jne    b17 <freeze_super+0xe7>
+     b17:	f3 0f 1e fa          	endbr64 
+	sb->s_writers.frozen = SB_FREEZE_COMPLETE;
+     b1b:	41 c7 84 24 38 02 00 	movl   $0x4,0x238(%r12)
+     b22:	00 04 00 00 00 
+	up_write(&sb->s_umount);
+     b27:	4c 89 f7             	mov    %r14,%rdi
+		sem->rw_sem.owner = RWSEM_OWNER_UNKNOWN;
+     b2a:	49 c7 84 24 c0 03 00 	movq   $0xffffffffffffffff,0x3c0(%r12)
+     b31:	00 ff ff ff ff 
+     b36:	49 c7 84 24 40 03 00 	movq   $0xffffffffffffffff,0x340(%r12)
+     b3d:	00 ff ff ff ff 
+     b42:	49 c7 84 24 c0 02 00 	movq   $0xffffffffffffffff,0x2c0(%r12)
+     b49:	00 ff ff ff ff 
+     b4e:	e8 00 00 00 00       	callq  b53 <freeze_super+0x123>
+}
+     b53:	48 83 c4 10          	add    $0x10,%rsp
+     b57:	44 89 e8             	mov    %r13d,%eax
+     b5a:	5b                   	pop    %rbx
+     b5b:	41 5c                	pop    %r12
+     b5d:	41 5d                	pop    %r13
+     b5f:	41 5e                	pop    %r14
+     b61:	41 5f                	pop    %r15
+     b63:	5d                   	pop    %rbp
+     b64:	c3                   	retq   
+		sb->s_writers.frozen = SB_FREEZE_COMPLETE;
+     b65:	41 c7 84 24 38 02 00 	movl   $0x4,0x238(%r12)
+     b6c:	00 04 00 00 00 
+		up_write(&sb->s_umount);
+     b71:	4c 89 f7             	mov    %r14,%rdi
+     b74:	e8 00 00 00 00       	callq  b79 <freeze_super+0x149>
+		return 0;
+     b79:	eb d8                	jmp    b53 <freeze_super+0x123>
+		up_write(&sb->s_umount);
+     b7b:	4c 89 f7             	mov    %r14,%rdi
+     b7e:	e8 00 00 00 00       	callq  b83 <freeze_super+0x153>
+		return 0;	/* sic - it's "nothing to do" */
+     b83:	eb ce                	jmp    b53 <freeze_super+0x123>
+		deactivate_locked_super(sb);
+     b85:	4c 89 e7             	mov    %r12,%rdi
+		return -EBUSY;
+     b88:	41 bd f0 ff ff ff    	mov    $0xfffffff0,%r13d
+		deactivate_locked_super(sb);
+     b8e:	e8 00 00 00 00       	callq  b93 <freeze_super+0x163>
+		return -EBUSY;
+     b93:	eb be                	jmp    b53 <freeze_super+0x123>
+     b95:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+     b9c:	00 00 00 00 
+
+0000000000000ba0 <drop_super_exclusive>:
+{
+     ba0:	f3 0f 1e fa          	endbr64 
+     ba4:	e8 00 00 00 00       	callq  ba9 <drop_super_exclusive+0x9>
+     ba9:	55                   	push   %rbp
+     baa:	48 89 e5             	mov    %rsp,%rbp
+     bad:	41 54                	push   %r12
+     baf:	49 89 fc             	mov    %rdi,%r12
+	up_write(&sb->s_umount);
+     bb2:	48 8d 7f 70          	lea    0x70(%rdi),%rdi
+     bb6:	e8 00 00 00 00       	callq  bbb <drop_super_exclusive+0x1b>
+	put_super(sb);
+     bbb:	4c 89 e7             	mov    %r12,%rdi
+     bbe:	e8 7d fc ff ff       	callq  840 <put_super>
+}
+     bc3:	41 5c                	pop    %r12
+     bc5:	5d                   	pop    %rbp
+     bc6:	c3                   	retq   
+     bc7:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+     bce:	00 00 
+
+0000000000000bd0 <grab_super>:
+{
+     bd0:	e8 00 00 00 00       	callq  bd5 <grab_super+0x5>
+     bd5:	55                   	push   %rbp
+     bd6:	48 89 e5             	mov    %rsp,%rbp
+     bd9:	41 55                	push   %r13
+     bdb:	41 54                	push   %r12
+     bdd:	49 89 fc             	mov    %rdi,%r12
+	s->s_count++;
+     be0:	83 87 98 00 00 00 01 	addl   $0x1,0x98(%rdi)
+     be7:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     bee:	ff 14 25 00 00 00 00 	callq  *0x0
+	down_write(&s->s_umount);
+     bf5:	4d 8d 6c 24 70       	lea    0x70(%r12),%r13
+     bfa:	4c 89 ef             	mov    %r13,%rdi
+     bfd:	e8 00 00 00 00       	callq  c02 <grab_super+0x32>
+	if ((s->s_flags & SB_BORN) && atomic_inc_not_zero(&s->s_active)) {
+     c02:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+     c08:	74 2e                	je     c38 <grab_super+0x68>
+     c0a:	41 8b 84 24 9c 00 00 	mov    0x9c(%r12),%eax
+     c11:	00 
+static __always_inline int __arch_atomic_add_unless(atomic_t *v, int a, int u)
+{
+	int c = arch_atomic_read(v);
+
+	do {
+		if (unlikely(c == u))
+     c12:	85 c0                	test   %eax,%eax
+     c14:	74 22                	je     c38 <grab_super+0x68>
+			break;
+	} while (!arch_atomic_try_cmpxchg(v, &c, c + a));
+     c16:	8d 50 01             	lea    0x1(%rax),%edx
+	return try_cmpxchg(&v->counter, old, new);
+     c19:	f0 41 0f b1 94 24 9c 	lock cmpxchg %edx,0x9c(%r12)
+     c20:	00 00 00 
+     c23:	75 ed                	jne    c12 <grab_super+0x42>
+		put_super(s);
+     c25:	4c 89 e7             	mov    %r12,%rdi
+     c28:	e8 13 fc ff ff       	callq  840 <put_super>
+		return 1;
+     c2d:	b8 01 00 00 00       	mov    $0x1,%eax
+}
+     c32:	41 5c                	pop    %r12
+     c34:	41 5d                	pop    %r13
+     c36:	5d                   	pop    %rbp
+     c37:	c3                   	retq   
+	up_write(&s->s_umount);
+     c38:	4c 89 ef             	mov    %r13,%rdi
+     c3b:	e8 00 00 00 00       	callq  c40 <grab_super+0x70>
+	put_super(s);
+     c40:	4c 89 e7             	mov    %r12,%rdi
+     c43:	e8 f8 fb ff ff       	callq  840 <put_super>
+	return 0;
+     c48:	31 c0                	xor    %eax,%eax
+}
+     c4a:	41 5c                	pop    %r12
+     c4c:	41 5d                	pop    %r13
+     c4e:	5d                   	pop    %rbp
+     c4f:	c3                   	retq   
+
+0000000000000c50 <drop_super>:
+{
+     c50:	f3 0f 1e fa          	endbr64 
+     c54:	e8 00 00 00 00       	callq  c59 <drop_super+0x9>
+     c59:	55                   	push   %rbp
+     c5a:	48 89 e5             	mov    %rsp,%rbp
+     c5d:	41 54                	push   %r12
+     c5f:	49 89 fc             	mov    %rdi,%r12
+	up_read(&sb->s_umount);
+     c62:	48 8d 7f 70          	lea    0x70(%rdi),%rdi
+     c66:	e8 00 00 00 00       	callq  c6b <drop_super+0x1b>
+	put_super(sb);
+     c6b:	4c 89 e7             	mov    %r12,%rdi
+     c6e:	e8 cd fb ff ff       	callq  840 <put_super>
+}
+     c73:	41 5c                	pop    %r12
+     c75:	5d                   	pop    %rbp
+     c76:	c3                   	retq   
+     c77:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+     c7e:	00 00 
+
+0000000000000c80 <iterate_supers_type>:
+{
+     c80:	f3 0f 1e fa          	endbr64 
+     c84:	e8 00 00 00 00       	callq  c89 <iterate_supers_type+0x9>
+     c89:	55                   	push   %rbp
+     c8a:	48 89 e5             	mov    %rsp,%rbp
+     c8d:	41 57                	push   %r15
+     c8f:	41 56                	push   %r14
+     c91:	49 89 d6             	mov    %rdx,%r14
+     c94:	41 55                	push   %r13
+     c96:	41 54                	push   %r12
+     c98:	53                   	push   %rbx
+     c99:	48 89 fb             	mov    %rdi,%rbx
+     c9c:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     ca3:	48 83 ec 08          	sub    $0x8,%rsp
+     ca7:	48 89 75 d0          	mov    %rsi,-0x30(%rbp)
+     cab:	e8 00 00 00 00       	callq  cb0 <iterate_supers_type+0x30>
+	hlist_for_each_entry(sb, &type->fs_supers, s_instances) {
+     cb0:	4c 8b 63 30          	mov    0x30(%rbx),%r12
+     cb4:	48 c7 c3 00 00 00 00 	mov    $0x0,%rbx
+     cbb:	4d 85 e4             	test   %r12,%r12
+     cbe:	0f 84 ad 00 00 00    	je     d71 <iterate_supers_type+0xf1>
+     cc4:	49 81 ec e8 00 00 00 	sub    $0xe8,%r12
+     ccb:	0f 84 a0 00 00 00    	je     d71 <iterate_supers_type+0xf1>
+     cd1:	45 31 ff             	xor    %r15d,%r15d
+		sb->s_count++;
+     cd4:	41 83 84 24 98 00 00 	addl   $0x1,0x98(%r12)
+     cdb:	00 01 
+     cdd:	48 89 df             	mov    %rbx,%rdi
+     ce0:	ff 14 25 00 00 00 00 	callq  *0x0
+		down_read(&sb->s_umount);
+     ce7:	4d 8d 6c 24 70       	lea    0x70(%r12),%r13
+     cec:	4c 89 ef             	mov    %r13,%rdi
+     cef:	e8 00 00 00 00       	callq  cf4 <iterate_supers_type+0x74>
+		if (sb->s_root && (sb->s_flags & SB_BORN))
+     cf4:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+     cfa:	74 17                	je     d13 <iterate_supers_type+0x93>
+     cfc:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+     d02:	74 0f                	je     d13 <iterate_supers_type+0x93>
+			f(sb, arg);
+     d04:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
+     d08:	4c 89 f6             	mov    %r14,%rsi
+     d0b:	4c 89 e7             	mov    %r12,%rdi
+     d0e:	e8 00 00 00 00       	callq  d13 <iterate_supers_type+0x93>
+		up_read(&sb->s_umount);
+     d13:	4c 89 ef             	mov    %r13,%rdi
+     d16:	e8 00 00 00 00       	callq  d1b <iterate_supers_type+0x9b>
+     d1b:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     d22:	e8 00 00 00 00       	callq  d27 <iterate_supers_type+0xa7>
+		if (p)
+     d27:	4d 85 ff             	test   %r15,%r15
+     d2a:	74 12                	je     d3e <iterate_supers_type+0xbe>
+	if (!--s->s_count) {
+     d2c:	41 83 af 98 00 00 00 	subl   $0x1,0x98(%r15)
+     d33:	01 
+     d34:	75 08                	jne    d3e <iterate_supers_type+0xbe>
+     d36:	4c 89 ff             	mov    %r15,%rdi
+     d39:	e8 52 fa ff ff       	callq  790 <__put_super.part.0>
+	hlist_for_each_entry(sb, &type->fs_supers, s_instances) {
+     d3e:	49 8b 84 24 e8 00 00 	mov    0xe8(%r12),%rax
+     d45:	00 
+     d46:	48 85 c0             	test   %rax,%rax
+     d49:	74 13                	je     d5e <iterate_supers_type+0xde>
+     d4b:	4d 89 e7             	mov    %r12,%r15
+     d4e:	48 2d e8 00 00 00    	sub    $0xe8,%rax
+     d54:	74 08                	je     d5e <iterate_supers_type+0xde>
+     d56:	49 89 c4             	mov    %rax,%r12
+     d59:	e9 76 ff ff ff       	jmpq   cd4 <iterate_supers_type+0x54>
+	if (!--s->s_count) {
+     d5e:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+     d65:	00 01 
+     d67:	75 08                	jne    d71 <iterate_supers_type+0xf1>
+     d69:	4c 89 e7             	mov    %r12,%rdi
+     d6c:	e8 1f fa ff ff       	callq  790 <__put_super.part.0>
+     d71:	48 89 df             	mov    %rbx,%rdi
+     d74:	ff 14 25 00 00 00 00 	callq  *0x0
+}
+     d7b:	48 83 c4 08          	add    $0x8,%rsp
+     d7f:	5b                   	pop    %rbx
+     d80:	41 5c                	pop    %r12
+     d82:	41 5d                	pop    %r13
+     d84:	41 5e                	pop    %r14
+     d86:	41 5f                	pop    %r15
+     d88:	5d                   	pop    %rbp
+     d89:	c3                   	retq   
+     d8a:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+
+0000000000000d90 <__iterate_supers>:
+{
+     d90:	e8 00 00 00 00       	callq  d95 <__iterate_supers+0x5>
+     d95:	55                   	push   %rbp
+     d96:	48 89 e5             	mov    %rsp,%rbp
+     d99:	41 56                	push   %r14
+     d9b:	49 89 fe             	mov    %rdi,%r14
+     d9e:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     da5:	41 55                	push   %r13
+     da7:	49 c7 c5 00 00 00 00 	mov    $0x0,%r13
+     dae:	41 54                	push   %r12
+     db0:	53                   	push   %rbx
+     db1:	e8 00 00 00 00       	callq  db6 <__iterate_supers+0x26>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+     db6:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # dbd <__iterate_supers+0x2d>
+     dbd:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+     dc4:	0f 84 82 00 00 00    	je     e4c <__iterate_supers+0xbc>
+     dca:	45 31 e4             	xor    %r12d,%r12d
+     dcd:	eb 17                	jmp    de6 <__iterate_supers+0x56>
+     dcf:	4c 89 e7             	mov    %r12,%rdi
+     dd2:	49 89 dc             	mov    %rbx,%r12
+     dd5:	e8 b6 f9 ff ff       	callq  790 <__put_super.part.0>
+     dda:	48 8b 1b             	mov    (%rbx),%rbx
+     ddd:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+     de4:	74 4e                	je     e34 <__iterate_supers+0xa4>
+		if (hlist_unhashed(&sb->s_instances))
+     de6:	48 83 bb f0 00 00 00 	cmpq   $0x0,0xf0(%rbx)
+     ded:	00 
+     dee:	74 ea                	je     dda <__iterate_supers+0x4a>
+		sb->s_count++;
+     df0:	83 83 98 00 00 00 01 	addl   $0x1,0x98(%rbx)
+     df7:	4c 89 ef             	mov    %r13,%rdi
+     dfa:	ff 14 25 00 00 00 00 	callq  *0x0
+		f(sb);
+     e01:	48 89 df             	mov    %rbx,%rdi
+     e04:	e8 00 00 00 00       	callq  e09 <__iterate_supers+0x79>
+     e09:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     e10:	e8 00 00 00 00       	callq  e15 <__iterate_supers+0x85>
+		if (p)
+     e15:	4d 85 e4             	test   %r12,%r12
+     e18:	74 0b                	je     e25 <__iterate_supers+0x95>
+	if (!--s->s_count) {
+     e1a:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+     e21:	00 01 
+     e23:	74 aa                	je     dcf <__iterate_supers+0x3f>
+     e25:	49 89 dc             	mov    %rbx,%r12
+	list_for_each_entry(sb, &super_blocks, s_list) {
+     e28:	48 8b 1b             	mov    (%rbx),%rbx
+     e2b:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+     e32:	75 b2                	jne    de6 <__iterate_supers+0x56>
+	if (p)
+     e34:	4d 85 e4             	test   %r12,%r12
+     e37:	74 13                	je     e4c <__iterate_supers+0xbc>
+	if (!--s->s_count) {
+     e39:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+     e40:	00 01 
+     e42:	75 08                	jne    e4c <__iterate_supers+0xbc>
+     e44:	4c 89 e7             	mov    %r12,%rdi
+     e47:	e8 44 f9 ff ff       	callq  790 <__put_super.part.0>
+     e4c:	4c 89 ef             	mov    %r13,%rdi
+     e4f:	ff 14 25 00 00 00 00 	callq  *0x0
+}
+     e56:	5b                   	pop    %rbx
+     e57:	41 5c                	pop    %r12
+     e59:	41 5d                	pop    %r13
+     e5b:	41 5e                	pop    %r14
+     e5d:	5d                   	pop    %rbp
+     e5e:	c3                   	retq   
+     e5f:	90                   	nop
+
+0000000000000e60 <do_emergency_remount>:
+{
+     e60:	f3 0f 1e fa          	endbr64 
+     e64:	e8 00 00 00 00       	callq  e69 <do_emergency_remount+0x9>
+     e69:	55                   	push   %rbp
+     e6a:	48 89 e5             	mov    %rsp,%rbp
+     e6d:	41 54                	push   %r12
+     e6f:	49 89 fc             	mov    %rdi,%r12
+	__iterate_supers(do_emergency_remount_callback);
+     e72:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     e79:	e8 12 ff ff ff       	callq  d90 <__iterate_supers>
+	kfree(work);
+     e7e:	4c 89 e7             	mov    %r12,%rdi
+     e81:	e8 00 00 00 00       	callq  e86 <do_emergency_remount+0x26>
+	printk("Emergency Remount complete\n");
+     e86:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     e8d:	e8 00 00 00 00       	callq  e92 <do_emergency_remount+0x32>
+}
+     e92:	41 5c                	pop    %r12
+     e94:	5d                   	pop    %rbp
+     e95:	c3                   	retq   
+     e96:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+     e9d:	00 00 00 
+
+0000000000000ea0 <do_thaw_all>:
+{
+     ea0:	f3 0f 1e fa          	endbr64 
+     ea4:	e8 00 00 00 00       	callq  ea9 <do_thaw_all+0x9>
+     ea9:	55                   	push   %rbp
+     eaa:	48 89 e5             	mov    %rsp,%rbp
+     ead:	41 54                	push   %r12
+     eaf:	49 89 fc             	mov    %rdi,%r12
+	__iterate_supers(do_thaw_all_callback);
+     eb2:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     eb9:	e8 d2 fe ff ff       	callq  d90 <__iterate_supers>
+	kfree(work);
+     ebe:	4c 89 e7             	mov    %r12,%rdi
+     ec1:	e8 00 00 00 00       	callq  ec6 <do_thaw_all+0x26>
+	printk(KERN_WARNING "Emergency Thaw complete\n");
+     ec6:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+     ecd:	e8 00 00 00 00       	callq  ed2 <do_thaw_all+0x32>
+}
+     ed2:	41 5c                	pop    %r12
+     ed4:	5d                   	pop    %rbp
+     ed5:	c3                   	retq   
+     ed6:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+     edd:	00 00 00 
+
+0000000000000ee0 <deactivate_super>:
+{
+     ee0:	f3 0f 1e fa          	endbr64 
+     ee4:	e8 00 00 00 00       	callq  ee9 <deactivate_super+0x9>
+     ee9:	55                   	push   %rbp
+     eea:	48 89 e5             	mov    %rsp,%rbp
+     eed:	41 54                	push   %r12
+     eef:	8b 87 9c 00 00 00    	mov    0x9c(%rdi),%eax
+     ef5:	49 89 fc             	mov    %rdi,%r12
+		if (unlikely(c == u))
+     ef8:	83 f8 01             	cmp    $0x1,%eax
+     efb:	74 13                	je     f10 <deactivate_super+0x30>
+	} while (!arch_atomic_try_cmpxchg(v, &c, c + a));
+     efd:	8d 50 ff             	lea    -0x1(%rax),%edx
+	return try_cmpxchg(&v->counter, old, new);
+     f00:	f0 41 0f b1 94 24 9c 	lock cmpxchg %edx,0x9c(%r12)
+     f07:	00 00 00 
+     f0a:	75 ec                	jne    ef8 <deactivate_super+0x18>
+}
+     f0c:	41 5c                	pop    %r12
+     f0e:	5d                   	pop    %rbp
+     f0f:	c3                   	retq   
+		down_write(&s->s_umount);
+     f10:	49 8d 7c 24 70       	lea    0x70(%r12),%rdi
+     f15:	e8 00 00 00 00       	callq  f1a <deactivate_super+0x3a>
+		deactivate_locked_super(s);
+     f1a:	4c 89 e7             	mov    %r12,%rdi
+     f1d:	e8 00 00 00 00       	callq  f22 <deactivate_super+0x42>
+}
+     f22:	41 5c                	pop    %r12
+     f24:	5d                   	pop    %rbp
+     f25:	c3                   	retq   
+     f26:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+     f2d:	00 00 00 
+
+0000000000000f30 <destroy_unused_super.part.0>:
+static void destroy_unused_super(struct super_block *s)
+     f30:	e8 00 00 00 00       	callq  f35 <destroy_unused_super.part.0+0x5>
+     f35:	55                   	push   %rbp
+     f36:	48 89 e5             	mov    %rsp,%rbp
+     f39:	53                   	push   %rbx
+     f3a:	48 89 fb             	mov    %rdi,%rbx
+	up_write(&s->s_umount);
+     f3d:	48 83 c7 70          	add    $0x70,%rdi
+     f41:	e8 00 00 00 00       	callq  f46 <destroy_unused_super.part.0+0x16>
+	list_lru_destroy(&s->s_dentry_lru);
+     f46:	48 8d bb c0 04 00 00 	lea    0x4c0(%rbx),%rdi
+     f4d:	e8 00 00 00 00       	callq  f52 <destroy_unused_super.part.0+0x22>
+	list_lru_destroy(&s->s_inode_lru);
+     f52:	48 8d bb 00 05 00 00 	lea    0x500(%rbx),%rdi
+     f59:	e8 00 00 00 00       	callq  f5e <destroy_unused_super.part.0+0x2e>
+	security_sb_free(s);
+     f5e:	48 89 df             	mov    %rbx,%rdi
+     f61:	e8 00 00 00 00       	callq  f66 <destroy_unused_super.part.0+0x36>
+	put_user_ns(s->s_user_ns);
+     f66:	48 8b bb b8 04 00 00 	mov    0x4b8(%rbx),%rdi
+	if (ns && atomic_dec_and_test(&ns->count))
+     f6d:	48 85 ff             	test   %rdi,%rdi
+     f70:	74 09                	je     f7b <destroy_unused_super.part.0+0x4b>
+	GEN_UNARY_RMWcc(LOCK_PREFIX "decl", v->counter, "%0", e);
+     f72:	f0 ff 8f d8 00 00 00 	lock decl 0xd8(%rdi)
+     f79:	74 27                	je     fa2 <destroy_unused_super.part.0+0x72>
+	kfree(s->s_subtype);
+     f7b:	48 8b bb 40 04 00 00 	mov    0x440(%rbx),%rdi
+     f82:	e8 00 00 00 00       	callq  f87 <destroy_unused_super.part.0+0x57>
+	free_prealloced_shrinker(&s->s_shrink);
+     f87:	48 8d bb 58 04 00 00 	lea    0x458(%rbx),%rdi
+     f8e:	e8 00 00 00 00       	callq  f93 <destroy_unused_super.part.0+0x63>
+	destroy_super_work(&s->destroy_work);
+     f93:	48 8d bb 28 05 00 00 	lea    0x528(%rbx),%rdi
+     f9a:	e8 01 f1 ff ff       	callq  a0 <destroy_super_work>
+}
+     f9f:	5b                   	pop    %rbx
+     fa0:	5d                   	pop    %rbp
+     fa1:	c3                   	retq   
+		__put_user_ns(ns);
+     fa2:	e8 00 00 00 00       	callq  fa7 <destroy_unused_super.part.0+0x77>
+     fa7:	eb d2                	jmp    f7b <destroy_unused_super.part.0+0x4b>
+     fa9:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000000fb0 <sget_userns>:
+{
+     fb0:	f3 0f 1e fa          	endbr64 
+     fb4:	e8 00 00 00 00       	callq  fb9 <sget_userns+0x9>
+     fb9:	55                   	push   %rbp
+     fba:	48 89 e5             	mov    %rsp,%rbp
+     fbd:	41 57                	push   %r15
+     fbf:	41 56                	push   %r14
+     fc1:	41 55                	push   %r13
+     fc3:	41 54                	push   %r12
+     fc5:	49 89 f4             	mov    %rsi,%r12
+     fc8:	53                   	push   %rbx
+     fc9:	4c 89 c3             	mov    %r8,%rbx
+     fcc:	48 83 ec 20          	sub    $0x20,%rsp
+     fd0:	48 89 7d c8          	mov    %rdi,-0x38(%rbp)
+     fd4:	48 89 55 b8          	mov    %rdx,-0x48(%rbp)
+     fd8:	4c 89 4d d0          	mov    %r9,-0x30(%rbp)
+	if (!(flags & (SB_KERNMOUNT|SB_SUBMOUNT)) &&
+     fdc:	f7 c1 00 00 40 04    	test   $0x4400000,%ecx
+     fe2:	75 0e                	jne    ff2 <sget_userns+0x42>
+     fe4:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+     fe8:	f6 40 08 08          	testb  $0x8,0x8(%rax)
+     fec:	0f 84 33 04 00 00    	je     1425 <sget_userns+0x475>
+		if (__percpu_init_rwsem(&s->s_writers.rw_sem[i],
+     ff2:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+		s = alloc_super(type, (flags & ~SB_SUBMOUNT), user_ns);
+     ff6:	81 e1 ff ff ff fb    	and    $0xfbffffff,%ecx
+{
+     ffc:	45 31 f6             	xor    %r14d,%r14d
+		if (__percpu_init_rwsem(&s->s_writers.rw_sem[i],
+     fff:	4c 8d 68 38          	lea    0x38(%rax),%r13
+	s->s_flags = flags;
+    1003:	48 63 c1             	movslq %ecx,%rax
+    1006:	48 89 45 c0          	mov    %rax,-0x40(%rbp)
+    100a:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1011:	e8 00 00 00 00       	callq  1016 <sget_userns+0x66>
+	if (test) {
+    1016:	4d 85 e4             	test   %r12,%r12
+    1019:	0f 85 bc 02 00 00    	jne    12db <sget_userns+0x32b>
+	if (!s) {
+    101f:	49 c7 c7 00 00 00 00 	mov    $0x0,%r15
+    1026:	4d 85 f6             	test   %r14,%r14
+    1029:	0f 85 25 03 00 00    	jne    1354 <sget_userns+0x3a4>
+    102f:	4c 89 ff             	mov    %r15,%rdi
+    1032:	ff 14 25 00 00 00 00 	callq  *0x0
+			unsigned int index = kmalloc_index(size);
+
+			if (!index)
+				return ZERO_SIZE_PTR;
+
+			return kmem_cache_alloc_trace(kmalloc_caches[index],
+    1039:	48 8b 3d 00 00 00 00 	mov    0x0(%rip),%rdi        # 1040 <sget_userns+0x90>
+    1040:	ba c0 05 00 00       	mov    $0x5c0,%edx
+    1045:	be c0 80 62 00       	mov    $0x6280c0,%esi
+    104a:	e8 00 00 00 00       	callq  104f <sget_userns+0x9f>
+    104f:	49 89 c6             	mov    %rax,%r14
+	if (!s)
+    1052:	48 85 c0             	test   %rax,%rax
+    1055:	0f 84 08 04 00 00    	je     1463 <sget_userns+0x4b3>
+	INIT_LIST_HEAD(&s->s_mounts);
+    105b:	48 8d 80 c0 00 00 00 	lea    0xc0(%rax),%rax
+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+    1062:	49 89 86 c0 00 00 00 	mov    %rax,0xc0(%r14)
+    1069:	49 89 86 c8 00 00 00 	mov    %rax,0xc8(%r14)
+	if (ns)
+    1070:	48 85 db             	test   %rbx,%rbx
+    1073:	74 07                	je     107c <sget_userns+0xcc>
+	asm volatile(LOCK_PREFIX "incl %0"
+    1075:	f0 ff 83 d8 00 00 00 	lock incl 0xd8(%rbx)
+	s->s_user_ns = get_user_ns(user_ns);
+    107c:	49 89 9e b8 04 00 00 	mov    %rbx,0x4b8(%r14)
+	init_rwsem(&s->s_umount);
+    1083:	4d 8d 7e 70          	lea    0x70(%r14),%r15
+    1087:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    108e:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    1095:	4c 89 ff             	mov    %r15,%rdi
+    1098:	e8 00 00 00 00       	callq  109d <sget_userns+0xed>
+	down_write_nested(&s->s_umount, SINGLE_DEPTH_NESTING);
+    109d:	4c 89 ff             	mov    %r15,%rdi
+    10a0:	e8 00 00 00 00       	callq  10a5 <sget_userns+0xf5>
+	if (security_sb_alloc(s))
+    10a5:	4c 89 f7             	mov    %r14,%rdi
+    10a8:	e8 00 00 00 00       	callq  10ad <sget_userns+0xfd>
+    10ad:	85 c0                	test   %eax,%eax
+    10af:	0f 85 05 02 00 00    	jne    12ba <sget_userns+0x30a>
+		if (__percpu_init_rwsem(&s->s_writers.rw_sem[i],
+    10b5:	49 8d be 58 02 00 00 	lea    0x258(%r14),%rdi
+    10bc:	4c 89 ea             	mov    %r13,%rdx
+    10bf:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    10c6:	e8 00 00 00 00       	callq  10cb <sget_userns+0x11b>
+    10cb:	85 c0                	test   %eax,%eax
+    10cd:	0f 85 e7 01 00 00    	jne    12ba <sget_userns+0x30a>
+    10d3:	49 8d be d8 02 00 00 	lea    0x2d8(%r14),%rdi
+    10da:	4c 89 ea             	mov    %r13,%rdx
+    10dd:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    10e4:	e8 00 00 00 00       	callq  10e9 <sget_userns+0x139>
+    10e9:	85 c0                	test   %eax,%eax
+    10eb:	0f 85 c9 01 00 00    	jne    12ba <sget_userns+0x30a>
+    10f1:	49 8d be 58 03 00 00 	lea    0x358(%r14),%rdi
+    10f8:	4c 89 ea             	mov    %r13,%rdx
+    10fb:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    1102:	e8 00 00 00 00       	callq  1107 <sget_userns+0x157>
+    1107:	85 c0                	test   %eax,%eax
+    1109:	0f 85 ab 01 00 00    	jne    12ba <sget_userns+0x30a>
+	init_waitqueue_head(&s->s_writers.wait_unfrozen);
+    110f:	49 8d be 40 02 00 00 	lea    0x240(%r14),%rdi
+    1116:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    111d:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    1124:	e8 00 00 00 00       	callq  1129 <sget_userns+0x179>
+	s->s_flags = flags;
+    1129:	48 8b 45 c0          	mov    -0x40(%rbp),%rax
+	s->s_bdi = &noop_backing_dev_info;
+    112d:	49 c7 86 d8 00 00 00 	movq   $0x0,0xd8(%r14)
+    1134:	00 00 00 00 
+	s->s_flags = flags;
+    1138:	49 89 46 50          	mov    %rax,0x50(%r14)
+	if (s->s_user_ns != &init_user_ns)
+    113c:	49 81 be b8 04 00 00 	cmpq   $0x0,0x4b8(%r14)
+    1143:	00 00 00 00 
+    1147:	74 05                	je     114e <sget_userns+0x19e>
+		s->s_iflags |= SB_I_NODEV;
+    1149:	49 83 4e 58 04       	orq    $0x4,0x58(%r14)
+	mutex_init(&s->s_sync_lock);
+    114e:	49 8d be 48 05 00 00 	lea    0x548(%r14),%rdi
+    1155:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+	h->next = NULL;
+    115c:	49 c7 86 e8 00 00 00 	movq   $0x0,0xe8(%r14)
+    1163:	00 00 00 00 
+    1167:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+	h->pprev = NULL;
+    116e:	49 c7 86 f0 00 00 00 	movq   $0x0,0xf0(%r14)
+    1175:	00 00 00 00 
+	INIT_HLIST_BL_HEAD(&s->s_roots);
+    1179:	49 c7 86 b8 00 00 00 	movq   $0x0,0xb8(%r14)
+    1180:	00 00 00 00 
+	mutex_init(&s->s_sync_lock);
+    1184:	e8 00 00 00 00       	callq  1189 <sget_userns+0x1d9>
+	INIT_LIST_HEAD(&s->s_inodes);
+    1189:	49 8d 86 88 05 00 00 	lea    0x588(%r14),%rax
+	if (list_lru_init_memcg(&s->s_dentry_lru))
+    1190:	31 d2                	xor    %edx,%edx
+	spin_lock_init(&s->s_inode_list_lock);
+    1192:	41 c7 86 80 05 00 00 	movl   $0x0,0x580(%r14)
+    1199:	00 00 00 00 
+    119d:	49 89 86 88 05 00 00 	mov    %rax,0x588(%r14)
+	if (list_lru_init_memcg(&s->s_dentry_lru))
+    11a4:	49 8d be c0 04 00 00 	lea    0x4c0(%r14),%rdi
+    11ab:	be 01 00 00 00       	mov    $0x1,%esi
+	list->prev = list;
+    11b0:	49 89 86 90 05 00 00 	mov    %rax,0x590(%r14)
+	INIT_LIST_HEAD(&s->s_inodes_wb);
+    11b7:	49 8d 86 a0 05 00 00 	lea    0x5a0(%r14),%rax
+    11be:	49 89 86 a0 05 00 00 	mov    %rax,0x5a0(%r14)
+    11c5:	49 89 86 a8 05 00 00 	mov    %rax,0x5a8(%r14)
+	spin_lock_init(&s->s_inode_wblist_lock);
+    11cc:	41 c7 86 98 05 00 00 	movl   $0x0,0x598(%r14)
+    11d3:	00 00 00 00 
+	if (list_lru_init_memcg(&s->s_dentry_lru))
+    11d7:	e8 00 00 00 00       	callq  11dc <sget_userns+0x22c>
+    11dc:	85 c0                	test   %eax,%eax
+    11de:	0f 85 d6 00 00 00    	jne    12ba <sget_userns+0x30a>
+	if (list_lru_init_memcg(&s->s_inode_lru))
+    11e4:	31 d2                	xor    %edx,%edx
+    11e6:	49 8d be 00 05 00 00 	lea    0x500(%r14),%rdi
+    11ed:	be 01 00 00 00       	mov    $0x1,%esi
+    11f2:	e8 00 00 00 00       	callq  11f7 <sget_userns+0x247>
+    11f7:	85 c0                	test   %eax,%eax
+    11f9:	0f 85 bb 00 00 00    	jne    12ba <sget_userns+0x30a>
+	mutex_init(&s->s_vfs_rename_mutex);
+    11ff:	49 8d be 20 04 00 00 	lea    0x420(%r14),%rdi
+    1206:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+	s->s_count = 1;
+    120d:	41 c7 86 98 00 00 00 	movl   $0x1,0x98(%r14)
+    1214:	01 00 00 00 
+	mutex_init(&s->s_vfs_rename_mutex);
+    1218:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+	case 4: *(volatile __u32 *)p = *(__u32 *)res; break;
+    121f:	41 c7 86 9c 00 00 00 	movl   $0x1,0x9c(%r14)
+    1226:	01 00 00 00 
+    122a:	e8 00 00 00 00       	callq  122f <sget_userns+0x27f>
+	init_rwsem(&s->s_dquot.dqio_sem);
+    122f:	49 8d be 08 01 00 00 	lea    0x108(%r14),%rdi
+    1236:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    123d:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    1244:	e8 00 00 00 00       	callq  1249 <sget_userns+0x299>
+	s->s_maxbytes = MAX_NON_LFS;
+    1249:	49 c7 46 20 ff ff ff 	movq   $0x7fffffff,0x20(%r14)
+    1250:	7f 
+	if (prealloc_shrinker(&s->s_shrink))
+    1251:	49 8d be 58 04 00 00 	lea    0x458(%r14),%rdi
+	s->s_op = &default_op;
+    1258:	49 c7 46 30 00 00 00 	movq   $0x0,0x30(%r14)
+    125f:	00 
+	s->s_time_gran = 1000000000;
+    1260:	41 c7 86 18 04 00 00 	movl   $0x3b9aca00,0x418(%r14)
+    1267:	00 ca 9a 3b 
+	s->cleancache_poolid = CLEANCACHE_NO_POOL;
+    126b:	41 c7 86 50 04 00 00 	movl   $0xffffffff,0x450(%r14)
+    1272:	ff ff ff ff 
+	s->s_shrink.seeks = DEFAULT_SEEKS;
+    1276:	41 c7 86 68 04 00 00 	movl   $0x2,0x468(%r14)
+    127d:	02 00 00 00 
+	s->s_shrink.scan_objects = super_cache_scan;
+    1281:	49 c7 86 60 04 00 00 	movq   $0x0,0x460(%r14)
+    1288:	00 00 00 00 
+	s->s_shrink.count_objects = super_cache_count;
+    128c:	49 c7 86 58 04 00 00 	movq   $0x0,0x458(%r14)
+    1293:	00 00 00 00 
+	s->s_shrink.batch = 1024;
+    1297:	49 c7 86 70 04 00 00 	movq   $0x400,0x470(%r14)
+    129e:	00 04 00 00 
+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
+    12a2:	49 c7 86 78 04 00 00 	movq   $0x3,0x478(%r14)
+    12a9:	03 00 00 00 
+	if (prealloc_shrinker(&s->s_shrink))
+    12ad:	e8 00 00 00 00       	callq  12b2 <sget_userns+0x302>
+    12b2:	85 c0                	test   %eax,%eax
+    12b4:	0f 84 50 fd ff ff    	je     100a <sget_userns+0x5a>
+	if (!s)
+    12ba:	4c 89 f7             	mov    %r14,%rdi
+			return ERR_PTR(-ENOMEM);
+    12bd:	49 c7 c7 f4 ff ff ff 	mov    $0xfffffffffffffff4,%r15
+    12c4:	e8 67 fc ff ff       	callq  f30 <destroy_unused_super.part.0>
+}
+    12c9:	48 83 c4 20          	add    $0x20,%rsp
+    12cd:	4c 89 f8             	mov    %r15,%rax
+    12d0:	5b                   	pop    %rbx
+    12d1:	41 5c                	pop    %r12
+    12d3:	41 5d                	pop    %r13
+    12d5:	41 5e                	pop    %r14
+    12d7:	41 5f                	pop    %r15
+    12d9:	5d                   	pop    %rbp
+    12da:	c3                   	retq   
+		hlist_for_each_entry(old, &type->fs_supers, s_instances) {
+    12db:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+    12df:	4c 8b 48 30          	mov    0x30(%rax),%r9
+    12e3:	4d 85 c9             	test   %r9,%r9
+    12e6:	0f 84 33 fd ff ff    	je     101f <sget_userns+0x6f>
+    12ec:	49 81 e9 e8 00 00 00 	sub    $0xe8,%r9
+    12f3:	4d 89 cf             	mov    %r9,%r15
+    12f6:	0f 84 23 fd ff ff    	je     101f <sget_userns+0x6f>
+			if (!test(old, data))
+    12fc:	48 8b 75 d0          	mov    -0x30(%rbp),%rsi
+    1300:	4c 89 cf             	mov    %r9,%rdi
+    1303:	e8 00 00 00 00       	callq  1308 <sget_userns+0x358>
+    1308:	85 c0                	test   %eax,%eax
+    130a:	74 2c                	je     1338 <sget_userns+0x388>
+			if (user_ns != old->s_user_ns) {
+    130c:	49 39 9f b8 04 00 00 	cmp    %rbx,0x4b8(%r15)
+    1313:	0f 85 e1 00 00 00    	jne    13fa <sget_userns+0x44a>
+			if (!grab_super(old))
+    1319:	4c 89 ff             	mov    %r15,%rdi
+    131c:	e8 af f8 ff ff       	callq  bd0 <grab_super>
+    1321:	85 c0                	test   %eax,%eax
+    1323:	0f 84 e1 fc ff ff    	je     100a <sget_userns+0x5a>
+	if (!s)
+    1329:	4d 85 f6             	test   %r14,%r14
+    132c:	74 9b                	je     12c9 <sget_userns+0x319>
+    132e:	4c 89 f7             	mov    %r14,%rdi
+    1331:	e8 fa fb ff ff       	callq  f30 <destroy_unused_super.part.0>
+    1336:	eb 91                	jmp    12c9 <sget_userns+0x319>
+		hlist_for_each_entry(old, &type->fs_supers, s_instances) {
+    1338:	4d 8b 8f e8 00 00 00 	mov    0xe8(%r15),%r9
+    133f:	4d 85 c9             	test   %r9,%r9
+    1342:	75 a8                	jne    12ec <sget_userns+0x33c>
+	if (!s) {
+    1344:	49 c7 c7 00 00 00 00 	mov    $0x0,%r15
+    134b:	4d 85 f6             	test   %r14,%r14
+    134e:	0f 84 db fc ff ff    	je     102f <sget_userns+0x7f>
+	err = set(s, data);
+    1354:	48 8b 75 d0          	mov    -0x30(%rbp),%rsi
+    1358:	48 8b 45 b8          	mov    -0x48(%rbp),%rax
+    135c:	4c 89 f7             	mov    %r14,%rdi
+    135f:	e8 00 00 00 00       	callq  1364 <sget_userns+0x3b4>
+    1364:	89 c3                	mov    %eax,%ebx
+	if (err) {
+    1366:	85 c0                	test   %eax,%eax
+    1368:	0f 85 db 00 00 00    	jne    1449 <sget_userns+0x499>
+	s->s_type = type;
+    136e:	48 8b 5d c8          	mov    -0x38(%rbp),%rbx
+{
+	size_t ret;
+	size_t p_size = __builtin_object_size(p, 0);
+	size_t q_size = __builtin_object_size(q, 0);
+	if (p_size == (size_t)-1 && q_size == (size_t)-1)
+		return __real_strlcpy(p, q, size);
+    1372:	ba 20 00 00 00       	mov    $0x20,%edx
+	strlcpy(s->s_id, type->name, sizeof(s->s_id));
+    1377:	49 8d be d8 03 00 00 	lea    0x3d8(%r14),%rdi
+	s->s_type = type;
+    137e:	49 89 5e 28          	mov    %rbx,0x28(%r14)
+    1382:	48 8b 33             	mov    (%rbx),%rsi
+    1385:	e8 00 00 00 00       	callq  138a <sget_userns+0x3da>
+	__list_add(new, head->prev, head);
+    138a:	48 8b 05 00 00 00 00 	mov    0x0(%rip),%rax        # 1391 <sget_userns+0x3e1>
+	next->prev = new;
+    1391:	4c 89 35 00 00 00 00 	mov    %r14,0x0(%rip)        # 1398 <sget_userns+0x3e8>
+	hlist_add_head(&s->s_instances, &type->fs_supers);
+    1398:	49 8d 96 e8 00 00 00 	lea    0xe8(%r14),%rdx
+	new->next = next;
+    139f:	49 c7 06 00 00 00 00 	movq   $0x0,(%r14)
+	new->prev = prev;
+    13a6:	49 89 46 08          	mov    %rax,0x8(%r14)
+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+    13aa:	4c 89 30             	mov    %r14,(%rax)
+	}
+}
+
+static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
+{
+	struct hlist_node *first = h->first;
+    13ad:	48 8b 43 30          	mov    0x30(%rbx),%rax
+	n->next = first;
+    13b1:	49 89 86 e8 00 00 00 	mov    %rax,0xe8(%r14)
+	if (first)
+    13b8:	48 85 c0             	test   %rax,%rax
+    13bb:	74 04                	je     13c1 <sget_userns+0x411>
+		first->pprev = &n->next;
+    13bd:	48 89 50 08          	mov    %rdx,0x8(%rax)
+    13c1:	48 8b 4d c8          	mov    -0x38(%rbp),%rcx
+    13c5:	4c 89 ff             	mov    %r15,%rdi
+	WRITE_ONCE(h->first, n);
+	n->pprev = &h->first;
+    13c8:	48 8d 41 30          	lea    0x30(%rcx),%rax
+    13cc:	48 89 51 30          	mov    %rdx,0x30(%rcx)
+    13d0:	49 89 86 f0 00 00 00 	mov    %rax,0xf0(%r14)
+    13d7:	ff 14 25 00 00 00 00 	callq  *0x0
+	get_filesystem(type);
+    13de:	48 89 cf             	mov    %rcx,%rdi
+	return s;
+    13e1:	4d 89 f7             	mov    %r14,%r15
+	get_filesystem(type);
+    13e4:	e8 00 00 00 00       	callq  13e9 <sget_userns+0x439>
+	register_shrinker_prepared(&s->s_shrink);
+    13e9:	49 8d be 58 04 00 00 	lea    0x458(%r14),%rdi
+    13f0:	e8 00 00 00 00       	callq  13f5 <sget_userns+0x445>
+	return s;
+    13f5:	e9 cf fe ff ff       	jmpq   12c9 <sget_userns+0x319>
+    13fa:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1401:	ff 14 25 00 00 00 00 	callq  *0x0
+				return ERR_PTR(-EBUSY);
+    1408:	49 c7 c7 f0 ff ff ff 	mov    $0xfffffffffffffff0,%r15
+	if (!s)
+    140f:	4d 85 f6             	test   %r14,%r14
+    1412:	0f 84 b1 fe ff ff    	je     12c9 <sget_userns+0x319>
+    1418:	4c 89 f7             	mov    %r14,%rdi
+    141b:	e8 10 fb ff ff       	callq  f30 <destroy_unused_super.part.0>
+    1420:	e9 a4 fe ff ff       	jmpq   12c9 <sget_userns+0x319>
+	    !capable(CAP_SYS_ADMIN))
+    1425:	bf 15 00 00 00       	mov    $0x15,%edi
+    142a:	89 4d c0             	mov    %ecx,-0x40(%rbp)
+		return ERR_PTR(-EPERM);
+    142d:	49 c7 c7 ff ff ff ff 	mov    $0xffffffffffffffff,%r15
+	    !capable(CAP_SYS_ADMIN))
+    1434:	e8 00 00 00 00       	callq  1439 <sget_userns+0x489>
+	    !(type->fs_flags & FS_USERNS_MOUNT) &&
+    1439:	8b 4d c0             	mov    -0x40(%rbp),%ecx
+    143c:	84 c0                	test   %al,%al
+    143e:	0f 85 ae fb ff ff    	jne    ff2 <sget_userns+0x42>
+retry:
+    1444:	e9 80 fe ff ff       	jmpq   12c9 <sget_userns+0x319>
+    1449:	4c 89 ff             	mov    %r15,%rdi
+    144c:	ff 14 25 00 00 00 00 	callq  *0x0
+	if (!s)
+    1453:	4c 89 f7             	mov    %r14,%rdi
+		return ERR_PTR(err);
+    1456:	4c 63 fb             	movslq %ebx,%r15
+    1459:	e8 d2 fa ff ff       	callq  f30 <destroy_unused_super.part.0>
+    145e:	e9 66 fe ff ff       	jmpq   12c9 <sget_userns+0x319>
+			return ERR_PTR(-ENOMEM);
+    1463:	49 c7 c7 f4 ff ff ff 	mov    $0xfffffffffffffff4,%r15
+    146a:	e9 5a fe ff ff       	jmpq   12c9 <sget_userns+0x319>
+    146f:	90                   	nop
+
+0000000000001470 <sget>:
+{
+    1470:	f3 0f 1e fa          	endbr64 
+    1474:	e8 00 00 00 00       	callq  1479 <sget+0x9>
+    1479:	55                   	push   %rbp
+    147a:	4d 89 c1             	mov    %r8,%r9
+    147d:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+    1484:	00 00 
+    1486:	48 89 e5             	mov    %rsp,%rbp
+    1489:	41 57                	push   %r15
+    148b:	49 89 d7             	mov    %rdx,%r15
+    148e:	41 56                	push   %r14
+    1490:	49 89 f6             	mov    %rsi,%r14
+    1493:	41 55                	push   %r13
+    1495:	49 89 fd             	mov    %rdi,%r13
+    1498:	41 54                	push   %r12
+    149a:	41 89 cc             	mov    %ecx,%r12d
+    149d:	53                   	push   %rbx
+		user_ns = &init_user_ns;
+    149e:	48 c7 c3 00 00 00 00 	mov    $0x0,%rbx
+{
+    14a5:	48 83 ec 08          	sub    $0x8,%rsp
+	struct user_namespace *user_ns = current_user_ns();
+    14a9:	48 8b 80 28 0a 00 00 	mov    0xa28(%rax),%rax
+		user_ns = &init_user_ns;
+    14b0:	f7 c1 00 00 00 04    	test   $0x4000000,%ecx
+    14b6:	48 0f 44 98 88 00 00 	cmove  0x88(%rax),%rbx
+    14bd:	00 
+	if (!(flags & (SB_KERNMOUNT|SB_SUBMOUNT)) && !ns_capable(user_ns, CAP_SYS_ADMIN))
+    14be:	81 e1 00 00 40 04    	and    $0x4400000,%ecx
+    14c4:	75 19                	jne    14df <sget+0x6f>
+    14c6:	be 15 00 00 00       	mov    $0x15,%esi
+    14cb:	48 89 df             	mov    %rbx,%rdi
+    14ce:	4c 89 45 d0          	mov    %r8,-0x30(%rbp)
+    14d2:	e8 00 00 00 00       	callq  14d7 <sget+0x67>
+    14d7:	4c 8b 4d d0          	mov    -0x30(%rbp),%r9
+    14db:	84 c0                	test   %al,%al
+    14dd:	74 23                	je     1502 <sget+0x92>
+	return sget_userns(type, test, set, flags, user_ns, data);
+    14df:	49 89 d8             	mov    %rbx,%r8
+    14e2:	44 89 e1             	mov    %r12d,%ecx
+    14e5:	4c 89 fa             	mov    %r15,%rdx
+    14e8:	4c 89 f6             	mov    %r14,%rsi
+    14eb:	4c 89 ef             	mov    %r13,%rdi
+    14ee:	e8 00 00 00 00       	callq  14f3 <sget+0x83>
+}
+    14f3:	48 83 c4 08          	add    $0x8,%rsp
+    14f7:	5b                   	pop    %rbx
+    14f8:	41 5c                	pop    %r12
+    14fa:	41 5d                	pop    %r13
+    14fc:	41 5e                	pop    %r14
+    14fe:	41 5f                	pop    %r15
+    1500:	5d                   	pop    %rbp
+    1501:	c3                   	retq   
+    1502:	48 83 c4 08          	add    $0x8,%rsp
+		return ERR_PTR(-EPERM);
+    1506:	48 c7 c0 ff ff ff ff 	mov    $0xffffffffffffffff,%rax
+}
+    150d:	5b                   	pop    %rbx
+    150e:	41 5c                	pop    %r12
+    1510:	41 5d                	pop    %r13
+    1512:	41 5e                	pop    %r14
+    1514:	41 5f                	pop    %r15
+    1516:	5d                   	pop    %rbp
+    1517:	c3                   	retq   
+    1518:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+    151f:	00 
+
+0000000000001520 <mount_nodev>:
+{
+    1520:	f3 0f 1e fa          	endbr64 
+    1524:	e8 00 00 00 00       	callq  1529 <mount_nodev+0x9>
+    1529:	55                   	push   %rbp
+	struct super_block *s = sget(fs_type, NULL, set_anon_super, flags, NULL);
+    152a:	45 31 c0             	xor    %r8d,%r8d
+{
+    152d:	48 89 e5             	mov    %rsp,%rbp
+    1530:	41 56                	push   %r14
+    1532:	49 89 d6             	mov    %rdx,%r14
+	struct super_block *s = sget(fs_type, NULL, set_anon_super, flags, NULL);
+    1535:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+{
+    153c:	41 55                	push   %r13
+    153e:	49 89 cd             	mov    %rcx,%r13
+	struct super_block *s = sget(fs_type, NULL, set_anon_super, flags, NULL);
+    1541:	89 f1                	mov    %esi,%ecx
+{
+    1543:	41 54                	push   %r12
+    1545:	53                   	push   %rbx
+    1546:	89 f3                	mov    %esi,%ebx
+	struct super_block *s = sget(fs_type, NULL, set_anon_super, flags, NULL);
+    1548:	31 f6                	xor    %esi,%esi
+    154a:	e8 00 00 00 00       	callq  154f <mount_nodev+0x2f>
+    154f:	49 89 c4             	mov    %rax,%r12
+	if (IS_ERR(s))
+    1552:	48 3d 00 f0 ff ff    	cmp    $0xfffffffffffff000,%rax
+    1558:	77 36                	ja     1590 <mount_nodev+0x70>
+	error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
+    155a:	c1 fb 0f             	sar    $0xf,%ebx
+    155d:	4c 89 f6             	mov    %r14,%rsi
+    1560:	48 89 c7             	mov    %rax,%rdi
+    1563:	89 da                	mov    %ebx,%edx
+    1565:	83 e2 01             	and    $0x1,%edx
+    1568:	e8 00 00 00 00       	callq  156d <mount_nodev+0x4d>
+    156d:	89 c3                	mov    %eax,%ebx
+	if (error) {
+    156f:	85 c0                	test   %eax,%eax
+    1571:	75 29                	jne    159c <mount_nodev+0x7c>
+	s->s_flags |= SB_ACTIVE;
+    1573:	49 81 4c 24 50 00 00 	orq    $0x40000000,0x50(%r12)
+    157a:	00 40 
+	return dget(s->s_root);
+    157c:	4d 8b 64 24 68       	mov    0x68(%r12),%r12
+	if (dentry)
+    1581:	4d 85 e4             	test   %r12,%r12
+    1584:	74 0a                	je     1590 <mount_nodev+0x70>
+		lockref_get(&dentry->d_lockref);
+    1586:	49 8d 7c 24 58       	lea    0x58(%r12),%rdi
+    158b:	e8 00 00 00 00       	callq  1590 <mount_nodev+0x70>
+}
+    1590:	5b                   	pop    %rbx
+    1591:	4c 89 e0             	mov    %r12,%rax
+    1594:	41 5c                	pop    %r12
+    1596:	41 5d                	pop    %r13
+    1598:	41 5e                	pop    %r14
+    159a:	5d                   	pop    %rbp
+    159b:	c3                   	retq   
+		deactivate_locked_super(s);
+    159c:	4c 89 e7             	mov    %r12,%rdi
+		return ERR_PTR(error);
+    159f:	4c 63 e3             	movslq %ebx,%r12
+		deactivate_locked_super(s);
+    15a2:	e8 00 00 00 00       	callq  15a7 <mount_nodev+0x87>
+}
+    15a7:	4c 89 e0             	mov    %r12,%rax
+    15aa:	5b                   	pop    %rbx
+    15ab:	41 5c                	pop    %r12
+    15ad:	41 5d                	pop    %r13
+    15af:	41 5e                	pop    %r14
+    15b1:	5d                   	pop    %rbp
+    15b2:	c3                   	retq   
+    15b3:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+    15ba:	00 00 00 00 
+    15be:	66 90                	xchg   %ax,%ax
+
+00000000000015c0 <mount_bdev>:
+{
+    15c0:	f3 0f 1e fa          	endbr64 
+    15c4:	e8 00 00 00 00       	callq  15c9 <mount_bdev+0x9>
+    15c9:	55                   	push   %rbp
+	if (!(flags & SB_RDONLY))
+    15ca:	89 f0                	mov    %esi,%eax
+    15cc:	83 e0 01             	and    $0x1,%eax
+{
+    15cf:	48 89 e5             	mov    %rsp,%rbp
+    15d2:	41 57                	push   %r15
+    15d4:	41 56                	push   %r14
+    15d6:	41 55                	push   %r13
+    15d8:	49 89 fd             	mov    %rdi,%r13
+    15db:	48 89 d7             	mov    %rdx,%rdi
+    15de:	41 54                	push   %r12
+	bdev = blkdev_get_by_path(dev_name, mode, fs_type);
+    15e0:	4c 89 ea             	mov    %r13,%rdx
+{
+    15e3:	53                   	push   %rbx
+    15e4:	89 f3                	mov    %esi,%ebx
+    15e6:	48 83 ec 10          	sub    $0x10,%rsp
+		mode |= FMODE_WRITE;
+    15ea:	83 f8 01             	cmp    $0x1,%eax
+{
+    15ed:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
+		mode |= FMODE_WRITE;
+    15f1:	45 19 ff             	sbb    %r15d,%r15d
+{
+    15f4:	4c 89 45 c8          	mov    %r8,-0x38(%rbp)
+		mode |= FMODE_WRITE;
+    15f8:	41 83 e7 02          	and    $0x2,%r15d
+    15fc:	41 81 c7 81 00 00 00 	add    $0x81,%r15d
+	bdev = blkdev_get_by_path(dev_name, mode, fs_type);
+    1603:	44 89 fe             	mov    %r15d,%esi
+    1606:	e8 00 00 00 00       	callq  160b <mount_bdev+0x4b>
+    160b:	49 89 c4             	mov    %rax,%r12
+	if (IS_ERR(bdev))
+    160e:	48 3d 00 f0 ff ff    	cmp    $0xfffffffffffff000,%rax
+    1614:	0f 87 e1 00 00 00    	ja     16fb <mount_bdev+0x13b>
+	mutex_lock(&bdev->bd_fsfreeze_mutex);
+    161a:	4c 8d b0 b8 00 00 00 	lea    0xb8(%rax),%r14
+    1621:	4c 89 f7             	mov    %r14,%rdi
+    1624:	e8 00 00 00 00       	callq  1629 <mount_bdev+0x69>
+	if (bdev->bd_fsfreeze_count > 0) {
+    1629:	41 8b 84 24 b0 00 00 	mov    0xb0(%r12),%eax
+    1630:	00 
+    1631:	85 c0                	test   %eax,%eax
+    1633:	0f 8f 8c 00 00 00    	jg     16c5 <mount_bdev+0x105>
+	s = sget(fs_type, test_bdev_super, set_bdev_super, flags | SB_NOSEC,
+    1639:	89 d9                	mov    %ebx,%ecx
+    163b:	4c 89 ef             	mov    %r13,%rdi
+    163e:	4d 89 e0             	mov    %r12,%r8
+    1641:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    1648:	81 c9 00 00 00 10    	or     $0x10000000,%ecx
+    164e:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    1655:	e8 00 00 00 00       	callq  165a <mount_bdev+0x9a>
+	mutex_unlock(&bdev->bd_fsfreeze_mutex);
+    165a:	4c 89 f7             	mov    %r14,%rdi
+	s = sget(fs_type, test_bdev_super, set_bdev_super, flags | SB_NOSEC,
+    165d:	49 89 c5             	mov    %rax,%r13
+	mutex_unlock(&bdev->bd_fsfreeze_mutex);
+    1660:	e8 00 00 00 00       	callq  1665 <mount_bdev+0xa5>
+	if (IS_ERR(s))
+    1665:	49 81 fd 00 f0 ff ff 	cmp    $0xfffffffffffff000,%r13
+    166c:	77 77                	ja     16e5 <mount_bdev+0x125>
+	if (s->s_root) {
+    166e:	49 83 7d 68 00       	cmpq   $0x0,0x68(%r13)
+    1673:	0f 84 87 00 00 00    	je     1700 <mount_bdev+0x140>
+		if ((flags ^ s->s_flags) & SB_RDONLY) {
+    1679:	49 33 5d 50          	xor    0x50(%r13),%rbx
+    167d:	83 e3 01             	and    $0x1,%ebx
+    1680:	75 68                	jne    16ea <mount_bdev+0x12a>
+		up_write(&s->s_umount);
+    1682:	4d 8d 75 70          	lea    0x70(%r13),%r14
+    1686:	4c 89 f7             	mov    %r14,%rdi
+    1689:	e8 00 00 00 00       	callq  168e <mount_bdev+0xce>
+		blkdev_put(bdev, mode);
+    168e:	4c 89 e7             	mov    %r12,%rdi
+    1691:	44 89 fe             	mov    %r15d,%esi
+    1694:	e8 00 00 00 00       	callq  1699 <mount_bdev+0xd9>
+		down_write(&s->s_umount);
+    1699:	4c 89 f7             	mov    %r14,%rdi
+    169c:	e8 00 00 00 00       	callq  16a1 <mount_bdev+0xe1>
+	return dget(s->s_root);
+    16a1:	4d 8b 6d 68          	mov    0x68(%r13),%r13
+	if (dentry)
+    16a5:	4d 85 ed             	test   %r13,%r13
+    16a8:	74 09                	je     16b3 <mount_bdev+0xf3>
+		lockref_get(&dentry->d_lockref);
+    16aa:	49 8d 7d 58          	lea    0x58(%r13),%rdi
+    16ae:	e8 00 00 00 00       	callq  16b3 <mount_bdev+0xf3>
+}
+    16b3:	48 83 c4 10          	add    $0x10,%rsp
+    16b7:	4c 89 e8             	mov    %r13,%rax
+    16ba:	5b                   	pop    %rbx
+    16bb:	41 5c                	pop    %r12
+    16bd:	41 5d                	pop    %r13
+    16bf:	41 5e                	pop    %r14
+    16c1:	41 5f                	pop    %r15
+    16c3:	5d                   	pop    %rbp
+    16c4:	c3                   	retq   
+		mutex_unlock(&bdev->bd_fsfreeze_mutex);
+    16c5:	4c 89 f7             	mov    %r14,%rdi
+		goto error_bdev;
+    16c8:	49 c7 c5 f0 ff ff ff 	mov    $0xfffffffffffffff0,%r13
+		mutex_unlock(&bdev->bd_fsfreeze_mutex);
+    16cf:	e8 00 00 00 00       	callq  16d4 <mount_bdev+0x114>
+		goto error_bdev;
+    16d4:	f3 0f 1e fa          	endbr64 
+	blkdev_put(bdev, mode);
+    16d8:	44 89 fe             	mov    %r15d,%esi
+    16db:	4c 89 e7             	mov    %r12,%rdi
+    16de:	e8 00 00 00 00       	callq  16e3 <mount_bdev+0x123>
+	return ERR_PTR(error);
+    16e3:	eb ce                	jmp    16b3 <mount_bdev+0xf3>
+	return (void *) error;
+}
+
+static inline long __must_check PTR_ERR(__force const void *ptr)
+{
+	return (long) ptr;
+    16e5:	4d 63 ed             	movslq %r13d,%r13
+    16e8:	eb ea                	jmp    16d4 <mount_bdev+0x114>
+			deactivate_locked_super(s);
+    16ea:	4c 89 ef             	mov    %r13,%rdi
+			goto error_bdev;
+    16ed:	49 c7 c5 f0 ff ff ff 	mov    $0xfffffffffffffff0,%r13
+			deactivate_locked_super(s);
+    16f4:	e8 00 00 00 00       	callq  16f9 <mount_bdev+0x139>
+			goto error_bdev;
+    16f9:	eb d9                	jmp    16d4 <mount_bdev+0x114>
+		return ERR_CAST(bdev);
+    16fb:	49 89 c5             	mov    %rax,%r13
+    16fe:	eb b3                	jmp    16b3 <mount_bdev+0xf3>
+		s->s_mode = mode;
+    1700:	45 89 bd 14 04 00 00 	mov    %r15d,0x414(%r13)
+		snprintf(s->s_id, sizeof(s->s_id), "%pg", bdev);
+    1707:	4c 89 e1             	mov    %r12,%rcx
+		error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
+    170a:	c1 fb 0f             	sar    $0xf,%ebx
+		snprintf(s->s_id, sizeof(s->s_id), "%pg", bdev);
+    170d:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    1714:	49 8d bd d8 03 00 00 	lea    0x3d8(%r13),%rdi
+    171b:	be 20 00 00 00       	mov    $0x20,%esi
+    1720:	e8 00 00 00 00       	callq  1725 <mount_bdev+0x165>
+		sb_set_blocksize(s, block_size(bdev));
+    1725:	41 8b 74 24 68       	mov    0x68(%r12),%esi
+    172a:	4c 89 ef             	mov    %r13,%rdi
+    172d:	e8 00 00 00 00       	callq  1732 <mount_bdev+0x172>
+		error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
+    1732:	89 da                	mov    %ebx,%edx
+    1734:	48 8b 75 d0          	mov    -0x30(%rbp),%rsi
+    1738:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+    173c:	83 e2 01             	and    $0x1,%edx
+    173f:	4c 89 ef             	mov    %r13,%rdi
+    1742:	e8 00 00 00 00       	callq  1747 <mount_bdev+0x187>
+    1747:	89 c3                	mov    %eax,%ebx
+		if (error) {
+    1749:	85 c0                	test   %eax,%eax
+    174b:	75 12                	jne    175f <mount_bdev+0x19f>
+		s->s_flags |= SB_ACTIVE;
+    174d:	49 81 4d 50 00 00 00 	orq    $0x40000000,0x50(%r13)
+    1754:	40 
+		bdev->bd_super = s;
+    1755:	4d 89 6c 24 10       	mov    %r13,0x10(%r12)
+    175a:	e9 42 ff ff ff       	jmpq   16a1 <mount_bdev+0xe1>
+			deactivate_locked_super(s);
+    175f:	4c 89 ef             	mov    %r13,%rdi
+    1762:	4c 63 eb             	movslq %ebx,%r13
+    1765:	e8 00 00 00 00       	callq  176a <mount_bdev+0x1aa>
+			goto error;
+    176a:	e9 44 ff ff ff       	jmpq   16b3 <mount_bdev+0xf3>
+    176f:	90                   	nop
+
+0000000000001770 <mount_ns>:
+{
+    1770:	f3 0f 1e fa          	endbr64 
+    1774:	e8 00 00 00 00       	callq  1779 <mount_ns+0x9>
+    1779:	55                   	push   %rbp
+    177a:	48 89 e5             	mov    %rsp,%rbp
+    177d:	41 57                	push   %r15
+    177f:	49 89 ff             	mov    %rdi,%r15
+    1782:	41 56                	push   %r14
+    1784:	49 89 d6             	mov    %rdx,%r14
+    1787:	41 55                	push   %r13
+    1789:	4d 89 cd             	mov    %r9,%r13
+    178c:	41 54                	push   %r12
+    178e:	4d 89 c4             	mov    %r8,%r12
+    1791:	53                   	push   %rbx
+    1792:	89 f3                	mov    %esi,%ebx
+    1794:	48 83 ec 08          	sub    $0x8,%rsp
+	if (!(flags & SB_KERNMOUNT) && !ns_capable(user_ns, CAP_SYS_ADMIN))
+    1798:	81 e6 00 00 40 00    	and    $0x400000,%esi
+    179e:	75 19                	jne    17b9 <mount_ns+0x49>
+    17a0:	be 15 00 00 00       	mov    $0x15,%esi
+    17a5:	4c 89 c7             	mov    %r8,%rdi
+    17a8:	48 89 4d d0          	mov    %rcx,-0x30(%rbp)
+    17ac:	e8 00 00 00 00       	callq  17b1 <mount_ns+0x41>
+    17b1:	48 8b 4d d0          	mov    -0x30(%rbp),%rcx
+    17b5:	84 c0                	test   %al,%al
+    17b7:	74 7d                	je     1836 <mount_ns+0xc6>
+	sb = sget_userns(fs_type, ns_test_super, ns_set_super, flags,
+    17b9:	49 89 c9             	mov    %rcx,%r9
+    17bc:	4d 89 e0             	mov    %r12,%r8
+    17bf:	89 d9                	mov    %ebx,%ecx
+    17c1:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+    17c8:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    17cf:	4c 89 ff             	mov    %r15,%rdi
+    17d2:	e8 00 00 00 00       	callq  17d7 <mount_ns+0x67>
+    17d7:	49 89 c4             	mov    %rax,%r12
+	if (IS_ERR(sb))
+    17da:	48 3d 00 f0 ff ff    	cmp    $0xfffffffffffff000,%rax
+    17e0:	77 5d                	ja     183f <mount_ns+0xcf>
+	if (!sb->s_root) {
+    17e2:	4c 8b 78 68          	mov    0x68(%rax),%r15
+    17e6:	4d 85 ff             	test   %r15,%r15
+    17e9:	74 1b                	je     1806 <mount_ns+0x96>
+    17eb:	49 8d 7f 58          	lea    0x58(%r15),%rdi
+    17ef:	e8 00 00 00 00       	callq  17f4 <mount_ns+0x84>
+}
+    17f4:	48 83 c4 08          	add    $0x8,%rsp
+    17f8:	4c 89 f8             	mov    %r15,%rax
+    17fb:	5b                   	pop    %rbx
+    17fc:	41 5c                	pop    %r12
+    17fe:	41 5d                	pop    %r13
+    1800:	41 5e                	pop    %r14
+    1802:	41 5f                	pop    %r15
+    1804:	5d                   	pop    %rbp
+    1805:	c3                   	retq   
+		err = fill_super(sb, data, flags & SB_SILENT ? 1 : 0);
+    1806:	c1 fb 0f             	sar    $0xf,%ebx
+    1809:	4c 89 f6             	mov    %r14,%rsi
+    180c:	48 89 c7             	mov    %rax,%rdi
+    180f:	89 da                	mov    %ebx,%edx
+    1811:	83 e2 01             	and    $0x1,%edx
+    1814:	e8 00 00 00 00       	callq  1819 <mount_ns+0xa9>
+    1819:	4c 63 f8             	movslq %eax,%r15
+		if (err) {
+    181c:	45 85 ff             	test   %r15d,%r15d
+    181f:	75 23                	jne    1844 <mount_ns+0xd4>
+		sb->s_flags |= SB_ACTIVE;
+    1821:	49 81 4c 24 50 00 00 	orq    $0x40000000,0x50(%r12)
+    1828:	00 40 
+	return dget(sb->s_root);
+    182a:	4d 8b 7c 24 68       	mov    0x68(%r12),%r15
+	if (dentry)
+    182f:	4d 85 ff             	test   %r15,%r15
+    1832:	74 c0                	je     17f4 <mount_ns+0x84>
+    1834:	eb b5                	jmp    17eb <mount_ns+0x7b>
+		return ERR_PTR(-EPERM);
+    1836:	49 c7 c7 ff ff ff ff 	mov    $0xffffffffffffffff,%r15
+    183d:	eb b5                	jmp    17f4 <mount_ns+0x84>
+		return ERR_CAST(sb);
+    183f:	49 89 c7             	mov    %rax,%r15
+    1842:	eb b0                	jmp    17f4 <mount_ns+0x84>
+			deactivate_locked_super(sb);
+    1844:	4c 89 e7             	mov    %r12,%rdi
+    1847:	e8 00 00 00 00       	callq  184c <mount_ns+0xdc>
+			return ERR_PTR(err);
+    184c:	eb a6                	jmp    17f4 <mount_ns+0x84>
+    184e:	66 90                	xchg   %ax,%ax
+
+0000000000001850 <__get_super.part.0>:
+static struct super_block *__get_super(struct block_device *bdev, bool excl)
+    1850:	e8 00 00 00 00       	callq  1855 <__get_super.part.0+0x5>
+    1855:	55                   	push   %rbp
+    1856:	48 89 e5             	mov    %rsp,%rbp
+    1859:	41 57                	push   %r15
+    185b:	41 56                	push   %r14
+    185d:	41 89 f6             	mov    %esi,%r14d
+    1860:	41 55                	push   %r13
+    1862:	49 c7 c5 00 00 00 00 	mov    $0x0,%r13
+    1869:	41 54                	push   %r12
+    186b:	53                   	push   %rbx
+    186c:	48 89 fb             	mov    %rdi,%rbx
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    186f:	4c 8b 25 00 00 00 00 	mov    0x0(%rip),%r12        # 1876 <__get_super.part.0+0x26>
+    1876:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    187d:	74 22                	je     18a1 <__get_super.part.0+0x51>
+		if (hlist_unhashed(&sb->s_instances))
+    187f:	49 83 bc 24 f0 00 00 	cmpq   $0x0,0xf0(%r12)
+    1886:	00 00 
+    1888:	74 0a                	je     1894 <__get_super.part.0+0x44>
+		if (sb->s_bdev == bdev) {
+    188a:	49 39 9c 24 d0 00 00 	cmp    %rbx,0xd0(%r12)
+    1891:	00 
+    1892:	74 28                	je     18bc <__get_super.part.0+0x6c>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1894:	4d 8b 24 24          	mov    (%r12),%r12
+    1898:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    189f:	75 de                	jne    187f <__get_super.part.0+0x2f>
+    18a1:	4c 89 ef             	mov    %r13,%rdi
+    18a4:	ff 14 25 00 00 00 00 	callq  *0x0
+	return NULL;
+    18ab:	45 31 e4             	xor    %r12d,%r12d
+}
+    18ae:	5b                   	pop    %rbx
+    18af:	4c 89 e0             	mov    %r12,%rax
+    18b2:	41 5c                	pop    %r12
+    18b4:	41 5d                	pop    %r13
+    18b6:	41 5e                	pop    %r14
+    18b8:	41 5f                	pop    %r15
+    18ba:	5d                   	pop    %rbp
+    18bb:	c3                   	retq   
+			sb->s_count++;
+    18bc:	41 83 84 24 98 00 00 	addl   $0x1,0x98(%r12)
+    18c3:	00 01 
+    18c5:	4c 89 ef             	mov    %r13,%rdi
+    18c8:	ff 14 25 00 00 00 00 	callq  *0x0
+			if (!excl)
+    18cf:	4d 8d 7c 24 70       	lea    0x70(%r12),%r15
+				down_read(&sb->s_umount);
+    18d4:	4c 89 ff             	mov    %r15,%rdi
+			if (!excl)
+    18d7:	45 84 f6             	test   %r14b,%r14b
+    18da:	74 49                	je     1925 <__get_super.part.0+0xd5>
+				down_write(&sb->s_umount);
+    18dc:	e8 00 00 00 00       	callq  18e1 <__get_super.part.0+0x91>
+			if (sb->s_root && (sb->s_flags & SB_BORN))
+    18e1:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+    18e7:	74 08                	je     18f1 <__get_super.part.0+0xa1>
+    18e9:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+    18ef:	75 bd                	jne    18ae <__get_super.part.0+0x5e>
+				up_write(&sb->s_umount);
+    18f1:	4c 89 ff             	mov    %r15,%rdi
+    18f4:	e8 00 00 00 00       	callq  18f9 <__get_super.part.0+0xa9>
+    18f9:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1900:	e8 00 00 00 00       	callq  1905 <__get_super.part.0+0xb5>
+	if (!--s->s_count) {
+    1905:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+    190c:	00 01 
+    190e:	0f 85 5b ff ff ff    	jne    186f <__get_super.part.0+0x1f>
+    1914:	f3 0f 1e fa          	endbr64 
+    1918:	4c 89 e7             	mov    %r12,%rdi
+    191b:	e8 70 ee ff ff       	callq  790 <__put_super.part.0>
+    1920:	e9 4a ff ff ff       	jmpq   186f <__get_super.part.0+0x1f>
+				down_read(&sb->s_umount);
+    1925:	e8 00 00 00 00       	callq  192a <__get_super.part.0+0xda>
+			if (sb->s_root && (sb->s_flags & SB_BORN))
+    192a:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+    1930:	74 0c                	je     193e <__get_super.part.0+0xee>
+    1932:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+    1938:	0f 85 70 ff ff ff    	jne    18ae <__get_super.part.0+0x5e>
+				up_read(&sb->s_umount);
+    193e:	4c 89 ff             	mov    %r15,%rdi
+    1941:	e8 00 00 00 00       	callq  1946 <__get_super.part.0+0xf6>
+    1946:	eb b1                	jmp    18f9 <__get_super.part.0+0xa9>
+    1948:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+    194f:	00 
+
+0000000000001950 <get_super>:
+{
+    1950:	f3 0f 1e fa          	endbr64 
+    1954:	e8 00 00 00 00       	callq  1959 <get_super+0x9>
+	if (!bdev)
+    1959:	48 85 ff             	test   %rdi,%rdi
+    195c:	74 23                	je     1981 <get_super+0x31>
+{
+    195e:	55                   	push   %rbp
+    195f:	48 89 e5             	mov    %rsp,%rbp
+    1962:	41 54                	push   %r12
+    1964:	49 89 fc             	mov    %rdi,%r12
+    1967:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    196e:	e8 00 00 00 00       	callq  1973 <get_super+0x23>
+    1973:	4c 89 e7             	mov    %r12,%rdi
+    1976:	31 f6                	xor    %esi,%esi
+    1978:	e8 d3 fe ff ff       	callq  1850 <__get_super.part.0>
+}
+    197d:	41 5c                	pop    %r12
+    197f:	5d                   	pop    %rbp
+    1980:	c3                   	retq   
+		return NULL;
+    1981:	31 c0                	xor    %eax,%eax
+}
+    1983:	c3                   	retq   
+    1984:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+    198b:	00 00 00 00 
+    198f:	90                   	nop
+
+0000000000001990 <__get_super_thawed>:
+{
+    1990:	e8 00 00 00 00       	callq  1995 <__get_super_thawed+0x5>
+    1995:	55                   	push   %rbp
+    1996:	48 89 e5             	mov    %rsp,%rbp
+    1999:	41 57                	push   %r15
+    199b:	41 56                	push   %r14
+    199d:	41 55                	push   %r13
+    199f:	41 54                	push   %r12
+    19a1:	53                   	push   %rbx
+    19a2:	48 83 ec 30          	sub    $0x30,%rsp
+    19a6:	65 48 8b 04 25 28 00 	mov    %gs:0x28,%rax
+    19ad:	00 00 
+    19af:	48 89 45 d0          	mov    %rax,-0x30(%rbp)
+    19b3:	31 c0                	xor    %eax,%eax
+	if (!bdev)
+    19b5:	48 85 ff             	test   %rdi,%rdi
+    19b8:	74 62                	je     1a1c <__get_super_thawed+0x8c>
+    19ba:	49 89 fd             	mov    %rdi,%r13
+    19bd:	41 89 f6             	mov    %esi,%r14d
+    19c0:	40 0f b6 de          	movzbl %sil,%ebx
+    19c4:	eb 1e                	jmp    19e4 <__get_super_thawed+0x54>
+			up_read(&s->s_umount);
+    19c6:	e8 00 00 00 00       	callq  19cb <__get_super_thawed+0x3b>
+		wait_event(s->s_writers.wait_unfrozen,
+    19cb:	e8 00 00 00 00       	callq  19d0 <__get_super_thawed+0x40>
+    19d0:	41 8b 94 24 38 02 00 	mov    0x238(%r12),%edx
+    19d7:	00 
+    19d8:	85 d2                	test   %edx,%edx
+    19da:	75 64                	jne    1a40 <__get_super_thawed+0xb0>
+		put_super(s);
+    19dc:	4c 89 e7             	mov    %r12,%rdi
+    19df:	e8 5c ee ff ff       	callq  840 <put_super>
+    19e4:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    19eb:	e8 00 00 00 00       	callq  19f0 <__get_super_thawed+0x60>
+    19f0:	89 de                	mov    %ebx,%esi
+    19f2:	4c 89 ef             	mov    %r13,%rdi
+    19f5:	e8 56 fe ff ff       	callq  1850 <__get_super.part.0>
+    19fa:	49 89 c4             	mov    %rax,%r12
+		if (!s || s->s_writers.frozen == SB_UNFROZEN)
+    19fd:	48 85 c0             	test   %rax,%rax
+    1a00:	74 1a                	je     1a1c <__get_super_thawed+0x8c>
+    1a02:	8b 88 38 02 00 00    	mov    0x238(%rax),%ecx
+    1a08:	85 c9                	test   %ecx,%ecx
+    1a0a:	74 13                	je     1a1f <__get_super_thawed+0x8f>
+		if (!excl)
+    1a0c:	48 8d 78 70          	lea    0x70(%rax),%rdi
+    1a10:	45 84 f6             	test   %r14b,%r14b
+    1a13:	74 b1                	je     19c6 <__get_super_thawed+0x36>
+			up_write(&s->s_umount);
+    1a15:	e8 00 00 00 00       	callq  1a1a <__get_super_thawed+0x8a>
+    1a1a:	eb af                	jmp    19cb <__get_super_thawed+0x3b>
+		return NULL;
+    1a1c:	45 31 e4             	xor    %r12d,%r12d
+}
+    1a1f:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
+    1a23:	65 48 33 04 25 28 00 	xor    %gs:0x28,%rax
+    1a2a:	00 00 
+    1a2c:	75 5a                	jne    1a88 <__get_super_thawed+0xf8>
+    1a2e:	48 83 c4 30          	add    $0x30,%rsp
+    1a32:	4c 89 e0             	mov    %r12,%rax
+    1a35:	5b                   	pop    %rbx
+    1a36:	41 5c                	pop    %r12
+    1a38:	41 5d                	pop    %r13
+    1a3a:	41 5e                	pop    %r14
+    1a3c:	41 5f                	pop    %r15
+    1a3e:	5d                   	pop    %rbp
+    1a3f:	c3                   	retq   
+		wait_event(s->s_writers.wait_unfrozen,
+    1a40:	31 f6                	xor    %esi,%esi
+    1a42:	48 8d 7d a8          	lea    -0x58(%rbp),%rdi
+    1a46:	4d 8d bc 24 40 02 00 	lea    0x240(%r12),%r15
+    1a4d:	00 
+    1a4e:	e8 00 00 00 00       	callq  1a53 <__get_super_thawed+0xc3>
+    1a53:	eb 05                	jmp    1a5a <__get_super_thawed+0xca>
+    1a55:	e8 00 00 00 00       	callq  1a5a <__get_super_thawed+0xca>
+    1a5a:	ba 02 00 00 00       	mov    $0x2,%edx
+    1a5f:	48 8d 75 a8          	lea    -0x58(%rbp),%rsi
+    1a63:	4c 89 ff             	mov    %r15,%rdi
+    1a66:	e8 00 00 00 00       	callq  1a6b <__get_super_thawed+0xdb>
+    1a6b:	41 8b 84 24 38 02 00 	mov    0x238(%r12),%eax
+    1a72:	00 
+    1a73:	85 c0                	test   %eax,%eax
+    1a75:	75 de                	jne    1a55 <__get_super_thawed+0xc5>
+    1a77:	48 8d 75 a8          	lea    -0x58(%rbp),%rsi
+    1a7b:	4c 89 ff             	mov    %r15,%rdi
+    1a7e:	e8 00 00 00 00       	callq  1a83 <__get_super_thawed+0xf3>
+    1a83:	e9 54 ff ff ff       	jmpq   19dc <__get_super_thawed+0x4c>
+}
+    1a88:	e8 00 00 00 00       	callq  1a8d <__get_super_thawed+0xfd>
+    1a8d:	0f 1f 00             	nopl   (%rax)
+
+0000000000001a90 <get_super_thawed>:
+{
+    1a90:	f3 0f 1e fa          	endbr64 
+    1a94:	e8 00 00 00 00       	callq  1a99 <get_super_thawed+0x9>
+    1a99:	55                   	push   %rbp
+	return __get_super_thawed(bdev, false);
+    1a9a:	31 f6                	xor    %esi,%esi
+{
+    1a9c:	48 89 e5             	mov    %rsp,%rbp
+	return __get_super_thawed(bdev, false);
+    1a9f:	e8 ec fe ff ff       	callq  1990 <__get_super_thawed>
+}
+    1aa4:	5d                   	pop    %rbp
+    1aa5:	c3                   	retq   
+    1aa6:	66 2e 0f 1f 84 00 00 	nopw   %cs:0x0(%rax,%rax,1)
+    1aad:	00 00 00 
+
+0000000000001ab0 <get_super_exclusive_thawed>:
+{
+    1ab0:	f3 0f 1e fa          	endbr64 
+    1ab4:	e8 00 00 00 00       	callq  1ab9 <get_super_exclusive_thawed+0x9>
+    1ab9:	55                   	push   %rbp
+	return __get_super_thawed(bdev, true);
+    1aba:	be 01 00 00 00       	mov    $0x1,%esi
+{
+    1abf:	48 89 e5             	mov    %rsp,%rbp
+	return __get_super_thawed(bdev, true);
+    1ac2:	e8 c9 fe ff ff       	callq  1990 <__get_super_thawed>
+}
+    1ac7:	5d                   	pop    %rbp
+    1ac8:	c3                   	retq   
+    1ac9:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000001ad0 <do_thaw_all_callback>:
+{
+    1ad0:	f3 0f 1e fa          	endbr64 
+    1ad4:	e8 00 00 00 00       	callq  1ad9 <do_thaw_all_callback+0x9>
+    1ad9:	55                   	push   %rbp
+    1ada:	48 89 e5             	mov    %rsp,%rbp
+    1add:	41 55                	push   %r13
+	down_write(&sb->s_umount);
+    1adf:	4c 8d 6f 70          	lea    0x70(%rdi),%r13
+{
+    1ae3:	41 54                	push   %r12
+    1ae5:	49 89 fc             	mov    %rdi,%r12
+	down_write(&sb->s_umount);
+    1ae8:	4c 89 ef             	mov    %r13,%rdi
+    1aeb:	e8 00 00 00 00       	callq  1af0 <do_thaw_all_callback+0x20>
+	if (sb->s_root && sb->s_flags & SB_BORN) {
+    1af0:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+    1af6:	74 08                	je     1b00 <do_thaw_all_callback+0x30>
+    1af8:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+    1afe:	75 0e                	jne    1b0e <do_thaw_all_callback+0x3e>
+		up_write(&sb->s_umount);
+    1b00:	4c 89 ef             	mov    %r13,%rdi
+    1b03:	e8 00 00 00 00       	callq  1b08 <do_thaw_all_callback+0x38>
+}
+    1b08:	41 5c                	pop    %r12
+    1b0a:	41 5d                	pop    %r13
+    1b0c:	5d                   	pop    %rbp
+    1b0d:	c3                   	retq   
+		emergency_thaw_bdev(sb);
+    1b0e:	4c 89 e7             	mov    %r12,%rdi
+    1b11:	e8 00 00 00 00       	callq  1b16 <do_thaw_all_callback+0x46>
+		thaw_super_locked(sb);
+    1b16:	4c 89 e7             	mov    %r12,%rdi
+    1b19:	e8 e2 ed ff ff       	callq  900 <thaw_super_locked>
+}
+    1b1e:	41 5c                	pop    %r12
+    1b20:	41 5d                	pop    %r13
+    1b22:	5d                   	pop    %rbp
+    1b23:	c3                   	retq   
+    1b24:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+    1b2b:	00 00 00 00 
+    1b2f:	90                   	nop
+
+0000000000001b30 <trylock_super>:
+{
+    1b30:	f3 0f 1e fa          	endbr64 
+    1b34:	e8 00 00 00 00       	callq  1b39 <trylock_super+0x9>
+    1b39:	55                   	push   %rbp
+    1b3a:	48 89 e5             	mov    %rsp,%rbp
+    1b3d:	41 54                	push   %r12
+	if (down_read_trylock(&sb->s_umount)) {
+    1b3f:	4c 8d 67 70          	lea    0x70(%rdi),%r12
+{
+    1b43:	53                   	push   %rbx
+    1b44:	48 89 fb             	mov    %rdi,%rbx
+	if (down_read_trylock(&sb->s_umount)) {
+    1b47:	4c 89 e7             	mov    %r12,%rdi
+    1b4a:	e8 00 00 00 00       	callq  1b4f <trylock_super+0x1f>
+    1b4f:	41 89 c0             	mov    %eax,%r8d
+	return false;
+    1b52:	31 c0                	xor    %eax,%eax
+	if (down_read_trylock(&sb->s_umount)) {
+    1b54:	45 85 c0             	test   %r8d,%r8d
+    1b57:	74 26                	je     1b7f <trylock_super+0x4f>
+		if (!hlist_unhashed(&sb->s_instances) &&
+    1b59:	48 83 bb f0 00 00 00 	cmpq   $0x0,0xf0(%rbx)
+    1b60:	00 
+    1b61:	74 12                	je     1b75 <trylock_super+0x45>
+    1b63:	48 83 7b 68 00       	cmpq   $0x0,0x68(%rbx)
+    1b68:	74 0b                	je     1b75 <trylock_super+0x45>
+			return true;
+    1b6a:	b8 01 00 00 00       	mov    $0x1,%eax
+		    sb->s_root && (sb->s_flags & SB_BORN))
+    1b6f:	f6 43 53 20          	testb  $0x20,0x53(%rbx)
+    1b73:	75 0a                	jne    1b7f <trylock_super+0x4f>
+		up_read(&sb->s_umount);
+    1b75:	4c 89 e7             	mov    %r12,%rdi
+    1b78:	e8 00 00 00 00       	callq  1b7d <trylock_super+0x4d>
+	return false;
+    1b7d:	31 c0                	xor    %eax,%eax
+}
+    1b7f:	5b                   	pop    %rbx
+    1b80:	41 5c                	pop    %r12
+    1b82:	5d                   	pop    %rbp
+    1b83:	c3                   	retq   
+    1b84:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+    1b8b:	00 00 00 00 
+    1b8f:	90                   	nop
+
+0000000000001b90 <super_cache_scan>:
+{
+    1b90:	f3 0f 1e fa          	endbr64 
+    1b94:	e8 00 00 00 00       	callq  1b99 <super_cache_scan+0x9>
+	if (!(sc->gfp_mask & __GFP_FS))
+    1b99:	f6 06 80             	testb  $0x80,(%rsi)
+    1b9c:	0f 84 96 01 00 00    	je     1d38 <super_cache_scan+0x1a8>
+{
+    1ba2:	55                   	push   %rbp
+    1ba3:	48 89 e5             	mov    %rsp,%rbp
+    1ba6:	41 57                	push   %r15
+    1ba8:	41 56                	push   %r14
+	sb = container_of(shrink, struct super_block, s_shrink);
+    1baa:	4c 8d b7 a8 fb ff ff 	lea    -0x458(%rdi),%r14
+{
+    1bb1:	41 55                	push   %r13
+    1bb3:	49 89 fd             	mov    %rdi,%r13
+	if (!trylock_super(sb))
+    1bb6:	4c 89 f7             	mov    %r14,%rdi
+{
+    1bb9:	41 54                	push   %r12
+    1bbb:	49 89 f4             	mov    %rsi,%r12
+    1bbe:	53                   	push   %rbx
+    1bbf:	48 83 ec 20          	sub    $0x20,%rsp
+	if (!trylock_super(sb))
+    1bc3:	e8 00 00 00 00       	callq  1bc8 <super_cache_scan+0x38>
+    1bc8:	84 c0                	test   %al,%al
+    1bca:	0f 84 45 01 00 00    	je     1d15 <super_cache_scan+0x185>
+	if (sb->s_op->nr_cached_objects)
+    1bd0:	49 8b 85 d8 fb ff ff 	mov    -0x428(%r13),%rax
+    1bd7:	48 8b 80 b8 00 00 00 	mov    0xb8(%rax),%rax
+    1bde:	48 85 c0             	test   %rax,%rax
+    1be1:	0f 84 44 01 00 00    	je     1d2b <super_cache_scan+0x19b>
+		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
+    1be7:	4c 89 e6             	mov    %r12,%rsi
+    1bea:	4c 89 f7             	mov    %r14,%rdi
+    1bed:	e8 00 00 00 00       	callq  1bf2 <super_cache_scan+0x62>
+    1bf2:	49 89 c7             	mov    %rax,%r15
+    1bf5:	48 8d 58 01          	lea    0x1(%rax),%rbx
+    1bf9:	49 8b 54 24 20       	mov    0x20(%r12),%rdx
+    1bfe:	41 8b 74 24 18       	mov    0x18(%r12),%esi
+	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
+    1c03:	49 8d bd a8 00 00 00 	lea    0xa8(%r13),%rdi
+    1c0a:	e8 00 00 00 00       	callq  1c0f <super_cache_scan+0x7f>
+    1c0f:	49 8b 54 24 20       	mov    0x20(%r12),%rdx
+    1c14:	41 8b 74 24 18       	mov    0x18(%r12),%esi
+	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
+    1c19:	49 8d 7d 68          	lea    0x68(%r13),%rdi
+    1c1d:	48 89 45 d0          	mov    %rax,-0x30(%rbp)
+    1c21:	e8 00 00 00 00       	callq  1c26 <super_cache_scan+0x96>
+	total_objects = dentries + inodes + fs_objects + 1;
+    1c26:	48 8b 4d d0          	mov    -0x30(%rbp),%rcx
+	freed = prune_dcache_sb(sb, sc);
+    1c2a:	4c 89 f7             	mov    %r14,%rdi
+    1c2d:	48 89 c6             	mov    %rax,%rsi
+	total_objects = dentries + inodes + fs_objects + 1;
+    1c30:	48 8d 04 01          	lea    (%rcx,%rax,1),%rax
+	if (!total_objects)
+    1c34:	48 01 c3             	add    %rax,%rbx
+    1c37:	b8 01 00 00 00       	mov    $0x1,%eax
+    1c3c:	48 0f 44 d8          	cmove  %rax,%rbx
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c40:	49 8b 44 24 08       	mov    0x8(%r12),%rax
+    1c45:	31 d2                	xor    %edx,%edx
+    1c47:	48 f7 f3             	div    %rbx
+    1c4a:	49 89 c2             	mov    %rax,%r10
+	fs_objects = mult_frac(sc->nr_to_scan, fs_objects, total_objects);
+    1c4d:	48 89 d0             	mov    %rdx,%rax
+    1c50:	49 89 d0             	mov    %rdx,%r8
+    1c53:	31 d2                	xor    %edx,%edx
+    1c55:	49 0f af c7          	imul   %r15,%rax
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c59:	4c 89 45 c0          	mov    %r8,-0x40(%rbp)
+	fs_objects = mult_frac(sc->nr_to_scan, fs_objects, total_objects);
+    1c5d:	4d 0f af fa          	imul   %r10,%r15
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c61:	4c 89 55 c8          	mov    %r10,-0x38(%rbp)
+	fs_objects = mult_frac(sc->nr_to_scan, fs_objects, total_objects);
+    1c65:	48 f7 f3             	div    %rbx
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c68:	31 d2                	xor    %edx,%edx
+	fs_objects = mult_frac(sc->nr_to_scan, fs_objects, total_objects);
+    1c6a:	4e 8d 0c 38          	lea    (%rax,%r15,1),%r9
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c6e:	4c 89 c0             	mov    %r8,%rax
+    1c71:	48 0f af c6          	imul   %rsi,%rax
+	fs_objects = mult_frac(sc->nr_to_scan, fs_objects, total_objects);
+    1c75:	4c 89 4d b8          	mov    %r9,-0x48(%rbp)
+	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
+    1c79:	49 0f af f2          	imul   %r10,%rsi
+    1c7d:	48 f7 f3             	div    %rbx
+	sc->nr_to_scan = dentries + 1;
+    1c80:	48 8d 44 30 01       	lea    0x1(%rax,%rsi,1),%rax
+	freed = prune_dcache_sb(sb, sc);
+    1c85:	4c 89 e6             	mov    %r12,%rsi
+	sc->nr_to_scan = dentries + 1;
+    1c88:	49 89 44 24 08       	mov    %rax,0x8(%r12)
+	freed = prune_dcache_sb(sb, sc);
+    1c8d:	e8 00 00 00 00       	callq  1c92 <super_cache_scan+0x102>
+	inodes = mult_frac(sc->nr_to_scan, inodes, total_objects);
+    1c92:	4c 8b 45 c0          	mov    -0x40(%rbp),%r8
+    1c96:	48 8b 4d d0          	mov    -0x30(%rbp),%rcx
+    1c9a:	31 d2                	xor    %edx,%edx
+	freed = prune_dcache_sb(sb, sc);
+    1c9c:	49 89 c7             	mov    %rax,%r15
+	inodes = mult_frac(sc->nr_to_scan, inodes, total_objects);
+    1c9f:	4c 8b 55 c8          	mov    -0x38(%rbp),%r10
+	freed += prune_icache_sb(sb, sc);
+    1ca3:	4c 89 e6             	mov    %r12,%rsi
+    1ca6:	4c 89 f7             	mov    %r14,%rdi
+	inodes = mult_frac(sc->nr_to_scan, inodes, total_objects);
+    1ca9:	4c 89 c0             	mov    %r8,%rax
+    1cac:	48 0f af c1          	imul   %rcx,%rax
+    1cb0:	49 0f af ca          	imul   %r10,%rcx
+    1cb4:	48 f7 f3             	div    %rbx
+	sc->nr_to_scan = inodes + 1;
+    1cb7:	48 8d 44 08 01       	lea    0x1(%rax,%rcx,1),%rax
+    1cbc:	49 89 44 24 08       	mov    %rax,0x8(%r12)
+	freed += prune_icache_sb(sb, sc);
+    1cc1:	e8 00 00 00 00       	callq  1cc6 <super_cache_scan+0x136>
+	if (fs_objects) {
+    1cc6:	4c 8b 4d b8          	mov    -0x48(%rbp),%r9
+	freed += prune_icache_sb(sb, sc);
+    1cca:	49 01 c7             	add    %rax,%r15
+	if (fs_objects) {
+    1ccd:	4d 85 c9             	test   %r9,%r9
+    1cd0:	74 25                	je     1cf7 <super_cache_scan+0x167>
+		sc->nr_to_scan = fs_objects + 1;
+    1cd2:	49 83 c1 01          	add    $0x1,%r9
+		freed += sb->s_op->free_cached_objects(sb, sc);
+    1cd6:	4c 89 e6             	mov    %r12,%rsi
+    1cd9:	4c 89 f7             	mov    %r14,%rdi
+		sc->nr_to_scan = fs_objects + 1;
+    1cdc:	4d 89 4c 24 08       	mov    %r9,0x8(%r12)
+		freed += sb->s_op->free_cached_objects(sb, sc);
+    1ce1:	49 8b 85 d8 fb ff ff 	mov    -0x428(%r13),%rax
+    1ce8:	48 8b 80 c0 00 00 00 	mov    0xc0(%rax),%rax
+    1cef:	e8 00 00 00 00       	callq  1cf4 <super_cache_scan+0x164>
+    1cf4:	49 01 c7             	add    %rax,%r15
+	up_read(&sb->s_umount);
+    1cf7:	49 8d bd 18 fc ff ff 	lea    -0x3e8(%r13),%rdi
+    1cfe:	e8 00 00 00 00       	callq  1d03 <super_cache_scan+0x173>
+	return freed;
+    1d03:	4c 89 f8             	mov    %r15,%rax
+}
+    1d06:	48 83 c4 20          	add    $0x20,%rsp
+    1d0a:	5b                   	pop    %rbx
+    1d0b:	41 5c                	pop    %r12
+    1d0d:	41 5d                	pop    %r13
+    1d0f:	41 5e                	pop    %r14
+    1d11:	41 5f                	pop    %r15
+    1d13:	5d                   	pop    %rbp
+    1d14:	c3                   	retq   
+    1d15:	48 83 c4 20          	add    $0x20,%rsp
+		return SHRINK_STOP;
+    1d19:	48 c7 c0 ff ff ff ff 	mov    $0xffffffffffffffff,%rax
+}
+    1d20:	5b                   	pop    %rbx
+    1d21:	41 5c                	pop    %r12
+    1d23:	41 5d                	pop    %r13
+    1d25:	41 5e                	pop    %r14
+    1d27:	41 5f                	pop    %r15
+    1d29:	5d                   	pop    %rbp
+    1d2a:	c3                   	retq   
+    1d2b:	bb 01 00 00 00       	mov    $0x1,%ebx
+    1d30:	45 31 ff             	xor    %r15d,%r15d
+    1d33:	e9 c1 fe ff ff       	jmpq   1bf9 <super_cache_scan+0x69>
+		return SHRINK_STOP;
+    1d38:	48 c7 c0 ff ff ff ff 	mov    $0xffffffffffffffff,%rax
+}
+    1d3f:	c3                   	retq   
+
+0000000000001d40 <iterate_supers>:
+{
+    1d40:	f3 0f 1e fa          	endbr64 
+    1d44:	e8 00 00 00 00       	callq  1d49 <iterate_supers+0x9>
+    1d49:	55                   	push   %rbp
+    1d4a:	48 89 e5             	mov    %rsp,%rbp
+    1d4d:	41 57                	push   %r15
+    1d4f:	41 56                	push   %r14
+    1d51:	49 89 f6             	mov    %rsi,%r14
+    1d54:	41 55                	push   %r13
+    1d56:	49 c7 c5 00 00 00 00 	mov    $0x0,%r13
+    1d5d:	41 54                	push   %r12
+    1d5f:	53                   	push   %rbx
+    1d60:	48 83 ec 08          	sub    $0x8,%rsp
+    1d64:	48 89 7d d0          	mov    %rdi,-0x30(%rbp)
+    1d68:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1d6f:	e8 00 00 00 00       	callq  1d74 <iterate_supers+0x34>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1d74:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # 1d7b <iterate_supers+0x3b>
+    1d7b:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+    1d82:	0f 84 aa 00 00 00    	je     1e32 <iterate_supers+0xf2>
+    1d88:	45 31 e4             	xor    %r12d,%r12d
+    1d8b:	eb 17                	jmp    1da4 <iterate_supers+0x64>
+    1d8d:	4c 89 e7             	mov    %r12,%rdi
+    1d90:	49 89 dc             	mov    %rbx,%r12
+    1d93:	e8 f8 e9 ff ff       	callq  790 <__put_super.part.0>
+    1d98:	48 8b 1b             	mov    (%rbx),%rbx
+    1d9b:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+    1da2:	74 76                	je     1e1a <iterate_supers+0xda>
+		if (hlist_unhashed(&sb->s_instances))
+    1da4:	48 83 bb f0 00 00 00 	cmpq   $0x0,0xf0(%rbx)
+    1dab:	00 
+    1dac:	74 ea                	je     1d98 <iterate_supers+0x58>
+		sb->s_count++;
+    1dae:	83 83 98 00 00 00 01 	addl   $0x1,0x98(%rbx)
+    1db5:	4c 89 ef             	mov    %r13,%rdi
+    1db8:	ff 14 25 00 00 00 00 	callq  *0x0
+		down_read(&sb->s_umount);
+    1dbf:	4c 8d 7b 70          	lea    0x70(%rbx),%r15
+    1dc3:	4c 89 ff             	mov    %r15,%rdi
+    1dc6:	e8 00 00 00 00       	callq  1dcb <iterate_supers+0x8b>
+		if (sb->s_root && (sb->s_flags & SB_BORN))
+    1dcb:	48 83 7b 68 00       	cmpq   $0x0,0x68(%rbx)
+    1dd0:	74 15                	je     1de7 <iterate_supers+0xa7>
+    1dd2:	f6 43 53 20          	testb  $0x20,0x53(%rbx)
+    1dd6:	74 0f                	je     1de7 <iterate_supers+0xa7>
+			f(sb, arg);
+    1dd8:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
+    1ddc:	4c 89 f6             	mov    %r14,%rsi
+    1ddf:	48 89 df             	mov    %rbx,%rdi
+    1de2:	e8 00 00 00 00       	callq  1de7 <iterate_supers+0xa7>
+		up_read(&sb->s_umount);
+    1de7:	4c 89 ff             	mov    %r15,%rdi
+    1dea:	e8 00 00 00 00       	callq  1def <iterate_supers+0xaf>
+    1def:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1df6:	e8 00 00 00 00       	callq  1dfb <iterate_supers+0xbb>
+		if (p)
+    1dfb:	4d 85 e4             	test   %r12,%r12
+    1dfe:	74 0b                	je     1e0b <iterate_supers+0xcb>
+	if (!--s->s_count) {
+    1e00:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+    1e07:	00 01 
+    1e09:	74 82                	je     1d8d <iterate_supers+0x4d>
+    1e0b:	49 89 dc             	mov    %rbx,%r12
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1e0e:	48 8b 1b             	mov    (%rbx),%rbx
+    1e11:	48 81 fb 00 00 00 00 	cmp    $0x0,%rbx
+    1e18:	75 8a                	jne    1da4 <iterate_supers+0x64>
+	if (p)
+    1e1a:	4d 85 e4             	test   %r12,%r12
+    1e1d:	74 13                	je     1e32 <iterate_supers+0xf2>
+	if (!--s->s_count) {
+    1e1f:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+    1e26:	00 01 
+    1e28:	75 08                	jne    1e32 <iterate_supers+0xf2>
+    1e2a:	4c 89 e7             	mov    %r12,%rdi
+    1e2d:	e8 5e e9 ff ff       	callq  790 <__put_super.part.0>
+    1e32:	4c 89 ef             	mov    %r13,%rdi
+    1e35:	ff 14 25 00 00 00 00 	callq  *0x0
+}
+    1e3c:	48 83 c4 08          	add    $0x8,%rsp
+    1e40:	5b                   	pop    %rbx
+    1e41:	41 5c                	pop    %r12
+    1e43:	41 5d                	pop    %r13
+    1e45:	41 5e                	pop    %r14
+    1e47:	41 5f                	pop    %r15
+    1e49:	5d                   	pop    %rbp
+    1e4a:	c3                   	retq   
+    1e4b:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+
+0000000000001e50 <get_active_super>:
+{
+    1e50:	f3 0f 1e fa          	endbr64 
+    1e54:	e8 00 00 00 00       	callq  1e59 <get_active_super+0x9>
+    1e59:	55                   	push   %rbp
+    1e5a:	48 89 e5             	mov    %rsp,%rbp
+    1e5d:	41 54                	push   %r12
+    1e5f:	53                   	push   %rbx
+	if (!bdev)
+    1e60:	48 85 ff             	test   %rdi,%rdi
+    1e63:	74 72                	je     1ed7 <get_active_super+0x87>
+    1e65:	48 89 fb             	mov    %rdi,%rbx
+    1e68:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1e6f:	e8 00 00 00 00       	callq  1e74 <get_active_super+0x24>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1e74:	4c 8b 25 00 00 00 00 	mov    0x0(%rip),%r12        # 1e7b <get_active_super+0x2b>
+    1e7b:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    1e82:	74 22                	je     1ea6 <get_active_super+0x56>
+		if (hlist_unhashed(&sb->s_instances))
+    1e84:	49 83 bc 24 f0 00 00 	cmpq   $0x0,0xf0(%r12)
+    1e8b:	00 00 
+    1e8d:	74 0a                	je     1e99 <get_active_super+0x49>
+		if (sb->s_bdev == bdev) {
+    1e8f:	49 39 9c 24 d0 00 00 	cmp    %rbx,0xd0(%r12)
+    1e96:	00 
+    1e97:	74 26                	je     1ebf <get_active_super+0x6f>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1e99:	4d 8b 24 24          	mov    (%r12),%r12
+    1e9d:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    1ea4:	75 de                	jne    1e84 <get_active_super+0x34>
+    1ea6:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1ead:	ff 14 25 00 00 00 00 	callq  *0x0
+	return NULL;
+    1eb4:	45 31 e4             	xor    %r12d,%r12d
+}
+    1eb7:	4c 89 e0             	mov    %r12,%rax
+    1eba:	5b                   	pop    %rbx
+    1ebb:	41 5c                	pop    %r12
+    1ebd:	5d                   	pop    %rbp
+    1ebe:	c3                   	retq   
+			if (!grab_super(sb))
+    1ebf:	4c 89 e7             	mov    %r12,%rdi
+    1ec2:	e8 09 ed ff ff       	callq  bd0 <grab_super>
+    1ec7:	85 c0                	test   %eax,%eax
+    1ec9:	74 9d                	je     1e68 <get_active_super+0x18>
+			up_write(&sb->s_umount);
+    1ecb:	49 8d 7c 24 70       	lea    0x70(%r12),%rdi
+    1ed0:	e8 00 00 00 00       	callq  1ed5 <get_active_super+0x85>
+			return sb;
+    1ed5:	eb e0                	jmp    1eb7 <get_active_super+0x67>
+		return NULL;
+    1ed7:	45 31 e4             	xor    %r12d,%r12d
+    1eda:	eb db                	jmp    1eb7 <get_active_super+0x67>
+    1edc:	0f 1f 40 00          	nopl   0x0(%rax)
+
+0000000000001ee0 <user_get_super>:
+{
+    1ee0:	f3 0f 1e fa          	endbr64 
+    1ee4:	e8 00 00 00 00       	callq  1ee9 <user_get_super+0x9>
+    1ee9:	55                   	push   %rbp
+    1eea:	48 89 e5             	mov    %rsp,%rbp
+    1eed:	41 56                	push   %r14
+    1eef:	41 55                	push   %r13
+    1ef1:	49 c7 c5 00 00 00 00 	mov    $0x0,%r13
+    1ef8:	41 54                	push   %r12
+    1efa:	53                   	push   %rbx
+    1efb:	89 fb                	mov    %edi,%ebx
+    1efd:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1f04:	e8 00 00 00 00       	callq  1f09 <user_get_super+0x29>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1f09:	4c 8b 25 00 00 00 00 	mov    0x0(%rip),%r12        # 1f10 <user_get_super+0x30>
+    1f10:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    1f17:	74 1f                	je     1f38 <user_get_super+0x58>
+		if (hlist_unhashed(&sb->s_instances))
+    1f19:	49 83 bc 24 f0 00 00 	cmpq   $0x0,0xf0(%r12)
+    1f20:	00 00 
+    1f22:	74 07                	je     1f2b <user_get_super+0x4b>
+		if (sb->s_dev ==  dev) {
+    1f24:	41 39 5c 24 10       	cmp    %ebx,0x10(%r12)
+    1f29:	74 26                	je     1f51 <user_get_super+0x71>
+	list_for_each_entry(sb, &super_blocks, s_list) {
+    1f2b:	4d 8b 24 24          	mov    (%r12),%r12
+    1f2f:	49 81 fc 00 00 00 00 	cmp    $0x0,%r12
+    1f36:	75 e1                	jne    1f19 <user_get_super+0x39>
+    1f38:	4c 89 ef             	mov    %r13,%rdi
+    1f3b:	ff 14 25 00 00 00 00 	callq  *0x0
+	return NULL;
+    1f42:	45 31 e4             	xor    %r12d,%r12d
+}
+    1f45:	5b                   	pop    %rbx
+    1f46:	4c 89 e0             	mov    %r12,%rax
+    1f49:	41 5c                	pop    %r12
+    1f4b:	41 5d                	pop    %r13
+    1f4d:	41 5e                	pop    %r14
+    1f4f:	5d                   	pop    %rbp
+    1f50:	c3                   	retq   
+			sb->s_count++;
+    1f51:	41 83 84 24 98 00 00 	addl   $0x1,0x98(%r12)
+    1f58:	00 01 
+    1f5a:	4c 89 ef             	mov    %r13,%rdi
+    1f5d:	ff 14 25 00 00 00 00 	callq  *0x0
+			down_read(&sb->s_umount);
+    1f64:	4d 8d 74 24 70       	lea    0x70(%r12),%r14
+    1f69:	4c 89 f7             	mov    %r14,%rdi
+    1f6c:	e8 00 00 00 00       	callq  1f71 <user_get_super+0x91>
+			if (sb->s_root && (sb->s_flags & SB_BORN))
+    1f71:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+    1f77:	74 08                	je     1f81 <user_get_super+0xa1>
+    1f79:	41 f6 44 24 53 20    	testb  $0x20,0x53(%r12)
+    1f7f:	75 c4                	jne    1f45 <user_get_super+0x65>
+			up_read(&sb->s_umount);
+    1f81:	4c 89 f7             	mov    %r14,%rdi
+    1f84:	e8 00 00 00 00       	callq  1f89 <user_get_super+0xa9>
+    1f89:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    1f90:	e8 00 00 00 00       	callq  1f95 <user_get_super+0xb5>
+	if (!--s->s_count) {
+    1f95:	41 83 ac 24 98 00 00 	subl   $0x1,0x98(%r12)
+    1f9c:	00 01 
+    1f9e:	0f 85 65 ff ff ff    	jne    1f09 <user_get_super+0x29>
+    1fa4:	f3 0f 1e fa          	endbr64 
+    1fa8:	4c 89 e7             	mov    %r12,%rdi
+    1fab:	e8 e0 e7 ff ff       	callq  790 <__put_super.part.0>
+    1fb0:	e9 54 ff ff ff       	jmpq   1f09 <user_get_super+0x29>
+    1fb5:	66 66 2e 0f 1f 84 00 	data16 nopw %cs:0x0(%rax,%rax,1)
+    1fbc:	00 00 00 00 
+
+0000000000001fc0 <do_remount_sb>:
+{
+    1fc0:	f3 0f 1e fa          	endbr64 
+    1fc4:	e8 00 00 00 00       	callq  1fc9 <do_remount_sb+0x9>
+    1fc9:	55                   	push   %rbp
+    1fca:	48 89 e5             	mov    %rsp,%rbp
+    1fcd:	41 57                	push   %r15
+    1fcf:	41 56                	push   %r14
+    1fd1:	41 55                	push   %r13
+    1fd3:	41 54                	push   %r12
+    1fd5:	53                   	push   %rbx
+    1fd6:	48 83 ec 08          	sub    $0x8,%rsp
+	if (sb->s_writers.frozen != SB_UNFROZEN)
+    1fda:	44 8b af 38 02 00 00 	mov    0x238(%rdi),%r13d
+{
+    1fe1:	89 75 d4             	mov    %esi,-0x2c(%rbp)
+	if (sb->s_writers.frozen != SB_UNFROZEN)
+    1fe4:	45 85 ed             	test   %r13d,%r13d
+    1fe7:	0f 85 96 01 00 00    	jne    2183 <do_remount_sb+0x1c3>
+    1fed:	48 89 fb             	mov    %rdi,%rbx
+    1ff0:	49 89 d6             	mov    %rdx,%r14
+    1ff3:	41 89 cc             	mov    %ecx,%r12d
+	if (!(sb_flags & SB_RDONLY) && bdev_read_only(sb->s_bdev))
+    1ff6:	f6 45 d4 01          	testb  $0x1,-0x2c(%rbp)
+    1ffa:	0f 84 98 00 00 00    	je     2098 <do_remount_sb+0xd8>
+	remount_ro = (sb_flags & SB_RDONLY) && !sb_rdonly(sb);
+    2000:	f6 43 50 01          	testb  $0x1,0x50(%rbx)
+    2004:	0f 85 ac 00 00 00    	jne    20b6 <do_remount_sb+0xf6>
+	__READ_ONCE_SIZE;
+    200a:	48 8b 83 b0 04 00 00 	mov    0x4b0(%rbx),%rax
+		if (!hlist_empty(&sb->s_pins)) {
+    2011:	48 85 c0             	test   %rax,%rax
+    2014:	0f 85 13 01 00 00    	jne    212d <do_remount_sb+0x16d>
+	shrink_dcache_sb(sb);
+    201a:	48 89 df             	mov    %rbx,%rdi
+    201d:	e8 00 00 00 00       	callq  2022 <do_remount_sb+0x62>
+		if (force) {
+    2022:	45 85 e4             	test   %r12d,%r12d
+    2025:	0f 84 ee 00 00 00    	je     2119 <do_remount_sb+0x159>
+			sb->s_readonly_remount = 1;
+    202b:	c7 83 a0 04 00 00 01 	movl   $0x1,0x4a0(%rbx)
+    2032:	00 00 00 
+	if (sb->s_op->remount_fs) {
+    2035:	48 8b 43 30          	mov    0x30(%rbx),%rax
+    2039:	41 bf 01 00 00 00    	mov    $0x1,%r15d
+    203f:	48 8b 40 68          	mov    0x68(%rax),%rax
+    2043:	48 85 c0             	test   %rax,%rax
+    2046:	0f 85 86 00 00 00    	jne    20d2 <do_remount_sb+0x112>
+	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (sb_flags & MS_RMT_MASK);
+    204c:	48 8b 43 50          	mov    0x50(%rbx),%rax
+    2050:	8b 55 d4             	mov    -0x2c(%rbp),%edx
+    2053:	48 25 ae ff 7f fd    	and    $0xfffffffffd7fffae,%rax
+    2059:	81 e2 51 00 80 02    	and    $0x2800051,%edx
+    205f:	48 09 d0             	or     %rdx,%rax
+    2062:	48 89 43 50          	mov    %rax,0x50(%rbx)
+	sb->s_readonly_remount = 0;
+    2066:	c7 83 a0 04 00 00 00 	movl   $0x0,0x4a0(%rbx)
+    206d:	00 00 00 
+	if (remount_ro && sb->s_bdev)
+    2070:	45 85 ff             	test   %r15d,%r15d
+    2073:	74 11                	je     2086 <do_remount_sb+0xc6>
+    2075:	48 8b bb d0 00 00 00 	mov    0xd0(%rbx),%rdi
+    207c:	48 85 ff             	test   %rdi,%rdi
+    207f:	74 05                	je     2086 <do_remount_sb+0xc6>
+		invalidate_bdev(sb->s_bdev);
+    2081:	e8 00 00 00 00       	callq  2086 <do_remount_sb+0xc6>
+}
+    2086:	48 83 c4 08          	add    $0x8,%rsp
+    208a:	44 89 e8             	mov    %r13d,%eax
+    208d:	5b                   	pop    %rbx
+    208e:	41 5c                	pop    %r12
+    2090:	41 5d                	pop    %r13
+    2092:	41 5e                	pop    %r14
+    2094:	41 5f                	pop    %r15
+    2096:	5d                   	pop    %rbp
+    2097:	c3                   	retq   
+	if (!(sb_flags & SB_RDONLY) && bdev_read_only(sb->s_bdev))
+    2098:	48 8b bf d0 00 00 00 	mov    0xd0(%rdi),%rdi
+    209f:	e8 00 00 00 00       	callq  20a4 <do_remount_sb+0xe4>
+    20a4:	85 c0                	test   %eax,%eax
+    20a6:	0f 85 e2 00 00 00    	jne    218e <do_remount_sb+0x1ce>
+	remount_ro = (sb_flags & SB_RDONLY) && !sb_rdonly(sb);
+    20ac:	f6 45 d4 01          	testb  $0x1,-0x2c(%rbp)
+    20b0:	0f 85 4a ff ff ff    	jne    2000 <do_remount_sb+0x40>
+	shrink_dcache_sb(sb);
+    20b6:	48 89 df             	mov    %rbx,%rdi
+	remount_ro = (sb_flags & SB_RDONLY) && !sb_rdonly(sb);
+    20b9:	45 31 ff             	xor    %r15d,%r15d
+	shrink_dcache_sb(sb);
+    20bc:	e8 00 00 00 00       	callq  20c1 <do_remount_sb+0x101>
+	if (sb->s_op->remount_fs) {
+    20c1:	48 8b 43 30          	mov    0x30(%rbx),%rax
+    20c5:	48 8b 40 68          	mov    0x68(%rax),%rax
+    20c9:	48 85 c0             	test   %rax,%rax
+    20cc:	0f 84 7a ff ff ff    	je     204c <do_remount_sb+0x8c>
+		retval = sb->s_op->remount_fs(sb, &sb_flags, data);
+    20d2:	4c 89 f2             	mov    %r14,%rdx
+    20d5:	48 8d 75 d4          	lea    -0x2c(%rbp),%rsi
+    20d9:	48 89 df             	mov    %rbx,%rdi
+    20dc:	e8 00 00 00 00       	callq  20e1 <do_remount_sb+0x121>
+		if (retval) {
+    20e1:	85 c0                	test   %eax,%eax
+    20e3:	0f 84 63 ff ff ff    	je     204c <do_remount_sb+0x8c>
+			if (!force)
+    20e9:	45 85 e4             	test   %r12d,%r12d
+    20ec:	75 0f                	jne    20fd <do_remount_sb+0x13d>
+	sb->s_readonly_remount = 0;
+    20ee:	c7 83 a0 04 00 00 00 	movl   $0x0,0x4a0(%rbx)
+    20f5:	00 00 00 
+	return retval;
+    20f8:	41 89 c5             	mov    %eax,%r13d
+    20fb:	eb 89                	jmp    2086 <do_remount_sb+0xc6>
+			WARN(1, "forced remount of a %s fs returned %i\n",
+    20fd:	48 8b 4b 28          	mov    0x28(%rbx),%rcx
+    2101:	89 c2                	mov    %eax,%edx
+    2103:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    210a:	48 8b 31             	mov    (%rcx),%rsi
+    210d:	e8 00 00 00 00       	callq  2112 <do_remount_sb+0x152>
+    2112:	0f 0b                	ud2    
+    2114:	e9 33 ff ff ff       	jmpq   204c <do_remount_sb+0x8c>
+			retval = sb_prepare_remount_readonly(sb);
+    2119:	48 89 df             	mov    %rbx,%rdi
+    211c:	e8 00 00 00 00       	callq  2121 <do_remount_sb+0x161>
+			if (retval)
+    2121:	85 c0                	test   %eax,%eax
+    2123:	75 56                	jne    217b <do_remount_sb+0x1bb>
+    2125:	41 bf 01 00 00 00    	mov    $0x1,%r15d
+    212b:	eb 94                	jmp    20c1 <do_remount_sb+0x101>
+			up_write(&sb->s_umount);
+    212d:	4c 8d 7b 70          	lea    0x70(%rbx),%r15
+    2131:	4c 89 ff             	mov    %r15,%rdi
+    2134:	e8 00 00 00 00       	callq  2139 <do_remount_sb+0x179>
+			group_pin_kill(&sb->s_pins);
+    2139:	48 8d bb b0 04 00 00 	lea    0x4b0(%rbx),%rdi
+    2140:	e8 00 00 00 00       	callq  2145 <do_remount_sb+0x185>
+			down_write(&sb->s_umount);
+    2145:	4c 89 ff             	mov    %r15,%rdi
+    2148:	e8 00 00 00 00       	callq  214d <do_remount_sb+0x18d>
+			if (!sb->s_root)
+    214d:	48 83 7b 68 00       	cmpq   $0x0,0x68(%rbx)
+    2152:	0f 84 2e ff ff ff    	je     2086 <do_remount_sb+0xc6>
+			if (sb->s_writers.frozen != SB_UNFROZEN)
+    2158:	8b 83 38 02 00 00    	mov    0x238(%rbx),%eax
+    215e:	85 c0                	test   %eax,%eax
+    2160:	75 21                	jne    2183 <do_remount_sb+0x1c3>
+			remount_ro = (sb_flags & SB_RDONLY) && !sb_rdonly(sb);
+    2162:	f6 45 d4 01          	testb  $0x1,-0x2c(%rbp)
+    2166:	0f 84 4a ff ff ff    	je     20b6 <do_remount_sb+0xf6>
+    216c:	f6 43 50 01          	testb  $0x1,0x50(%rbx)
+    2170:	0f 85 40 ff ff ff    	jne    20b6 <do_remount_sb+0xf6>
+    2176:	e9 9f fe ff ff       	jmpq   201a <do_remount_sb+0x5a>
+    217b:	41 89 c5             	mov    %eax,%r13d
+    217e:	e9 03 ff ff ff       	jmpq   2086 <do_remount_sb+0xc6>
+		return -EBUSY;
+    2183:	41 bd f0 ff ff ff    	mov    $0xfffffff0,%r13d
+    2189:	e9 f8 fe ff ff       	jmpq   2086 <do_remount_sb+0xc6>
+		return -EACCES;
+    218e:	41 bd f3 ff ff ff    	mov    $0xfffffff3,%r13d
+    2194:	e9 ed fe ff ff       	jmpq   2086 <do_remount_sb+0xc6>
+    2199:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+00000000000021a0 <do_emergency_remount_callback>:
+{
+    21a0:	f3 0f 1e fa          	endbr64 
+    21a4:	e8 00 00 00 00       	callq  21a9 <do_emergency_remount_callback+0x9>
+    21a9:	55                   	push   %rbp
+    21aa:	48 89 e5             	mov    %rsp,%rbp
+    21ad:	41 55                	push   %r13
+	down_write(&sb->s_umount);
+    21af:	4c 8d 6f 70          	lea    0x70(%rdi),%r13
+{
+    21b3:	41 54                	push   %r12
+    21b5:	49 89 fc             	mov    %rdi,%r12
+	down_write(&sb->s_umount);
+    21b8:	4c 89 ef             	mov    %r13,%rdi
+    21bb:	e8 00 00 00 00       	callq  21c0 <do_emergency_remount_callback+0x20>
+	if (sb->s_root && sb->s_bdev && (sb->s_flags & SB_BORN) &&
+    21c0:	49 83 7c 24 68 00    	cmpq   $0x0,0x68(%r12)
+    21c6:	74 1b                	je     21e3 <do_emergency_remount_callback+0x43>
+    21c8:	49 83 bc 24 d0 00 00 	cmpq   $0x0,0xd0(%r12)
+    21cf:	00 00 
+    21d1:	74 10                	je     21e3 <do_emergency_remount_callback+0x43>
+    21d3:	49 8b 44 24 50       	mov    0x50(%r12),%rax
+    21d8:	a9 00 00 00 20       	test   $0x20000000,%eax
+    21dd:	74 04                	je     21e3 <do_emergency_remount_callback+0x43>
+    21df:	a8 01                	test   $0x1,%al
+    21e1:	74 0e                	je     21f1 <do_emergency_remount_callback+0x51>
+	up_write(&sb->s_umount);
+    21e3:	4c 89 ef             	mov    %r13,%rdi
+    21e6:	e8 00 00 00 00       	callq  21eb <do_emergency_remount_callback+0x4b>
+}
+    21eb:	41 5c                	pop    %r12
+    21ed:	41 5d                	pop    %r13
+    21ef:	5d                   	pop    %rbp
+    21f0:	c3                   	retq   
+		do_remount_sb(sb, SB_RDONLY, NULL, 1);
+    21f1:	b9 01 00 00 00       	mov    $0x1,%ecx
+    21f6:	31 d2                	xor    %edx,%edx
+    21f8:	be 01 00 00 00       	mov    $0x1,%esi
+    21fd:	4c 89 e7             	mov    %r12,%rdi
+    2200:	e8 00 00 00 00       	callq  2205 <do_emergency_remount_callback+0x65>
+    2205:	eb dc                	jmp    21e3 <do_emergency_remount_callback+0x43>
+    2207:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+    220e:	00 00 
+
+0000000000002210 <mount_single>:
+{
+    2210:	f3 0f 1e fa          	endbr64 
+    2214:	e8 00 00 00 00       	callq  2219 <mount_single+0x9>
+    2219:	55                   	push   %rbp
+	s = sget(fs_type, compare_single, set_anon_super, flags, NULL);
+    221a:	45 31 c0             	xor    %r8d,%r8d
+{
+    221d:	48 89 e5             	mov    %rsp,%rbp
+    2220:	41 56                	push   %r14
+    2222:	49 89 d6             	mov    %rdx,%r14
+	s = sget(fs_type, compare_single, set_anon_super, flags, NULL);
+    2225:	48 c7 c2 00 00 00 00 	mov    $0x0,%rdx
+{
+    222c:	41 55                	push   %r13
+    222e:	41 89 f5             	mov    %esi,%r13d
+    2231:	41 54                	push   %r12
+    2233:	53                   	push   %rbx
+    2234:	48 89 cb             	mov    %rcx,%rbx
+	s = sget(fs_type, compare_single, set_anon_super, flags, NULL);
+    2237:	89 f1                	mov    %esi,%ecx
+    2239:	48 c7 c6 00 00 00 00 	mov    $0x0,%rsi
+    2240:	e8 00 00 00 00       	callq  2245 <mount_single+0x35>
+    2245:	49 89 c4             	mov    %rax,%r12
+	if (IS_ERR(s))
+    2248:	48 3d 00 f0 ff ff    	cmp    $0xfffffffffffff000,%rax
+    224e:	77 2b                	ja     227b <mount_single+0x6b>
+	if (!s->s_root) {
+    2250:	48 83 78 68 00       	cmpq   $0x0,0x68(%rax)
+    2255:	74 30                	je     2287 <mount_single+0x77>
+		do_remount_sb(s, flags, data, 0);
+    2257:	31 c9                	xor    %ecx,%ecx
+    2259:	4c 89 f2             	mov    %r14,%rdx
+    225c:	44 89 ee             	mov    %r13d,%esi
+    225f:	48 89 c7             	mov    %rax,%rdi
+    2262:	e8 00 00 00 00       	callq  2267 <mount_single+0x57>
+	return dget(s->s_root);
+    2267:	4d 8b 64 24 68       	mov    0x68(%r12),%r12
+    226c:	4d 85 e4             	test   %r12,%r12
+    226f:	74 0a                	je     227b <mount_single+0x6b>
+		lockref_get(&dentry->d_lockref);
+    2271:	49 8d 7c 24 58       	lea    0x58(%r12),%rdi
+    2276:	e8 00 00 00 00       	callq  227b <mount_single+0x6b>
+}
+    227b:	5b                   	pop    %rbx
+    227c:	4c 89 e0             	mov    %r12,%rax
+    227f:	41 5c                	pop    %r12
+    2281:	41 5d                	pop    %r13
+    2283:	41 5e                	pop    %r14
+    2285:	5d                   	pop    %rbp
+    2286:	c3                   	retq   
+		error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
+    2287:	44 89 ea             	mov    %r13d,%edx
+    228a:	4c 89 f6             	mov    %r14,%rsi
+    228d:	48 89 c7             	mov    %rax,%rdi
+    2290:	c1 fa 0f             	sar    $0xf,%edx
+    2293:	83 e2 01             	and    $0x1,%edx
+    2296:	e8 00 00 00 00       	callq  229b <mount_single+0x8b>
+    229b:	89 c3                	mov    %eax,%ebx
+		if (error) {
+    229d:	85 c0                	test   %eax,%eax
+    229f:	75 0b                	jne    22ac <mount_single+0x9c>
+		s->s_flags |= SB_ACTIVE;
+    22a1:	49 81 4c 24 50 00 00 	orq    $0x40000000,0x50(%r12)
+    22a8:	00 40 
+    22aa:	eb bb                	jmp    2267 <mount_single+0x57>
+			deactivate_locked_super(s);
+    22ac:	4c 89 e7             	mov    %r12,%rdi
+			return ERR_PTR(error);
+    22af:	4c 63 e3             	movslq %ebx,%r12
+			deactivate_locked_super(s);
+    22b2:	e8 00 00 00 00       	callq  22b7 <mount_single+0xa7>
+			return ERR_PTR(error);
+    22b7:	eb c2                	jmp    227b <mount_single+0x6b>
+    22b9:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+00000000000022c0 <emergency_remount>:
+{
+    22c0:	f3 0f 1e fa          	endbr64 
+    22c4:	e8 00 00 00 00       	callq  22c9 <emergency_remount+0x9>
+    22c9:	55                   	push   %rbp
+    22ca:	ba 20 00 00 00       	mov    $0x20,%edx
+    22cf:	be 20 00 48 00       	mov    $0x480020,%esi
+    22d4:	48 8b 3d 00 00 00 00 	mov    0x0(%rip),%rdi        # 22db <emergency_remount+0x1b>
+    22db:	48 89 e5             	mov    %rsp,%rbp
+    22de:	e8 00 00 00 00       	callq  22e3 <emergency_remount+0x23>
+	if (work) {
+    22e3:	48 85 c0             	test   %rax,%rax
+    22e6:	74 35                	je     231d <emergency_remount+0x5d>
+    22e8:	48 89 c2             	mov    %rax,%rdx
+    22eb:	48 8b 35 00 00 00 00 	mov    0x0(%rip),%rsi        # 22f2 <emergency_remount+0x32>
+    22f2:	bf 00 20 00 00       	mov    $0x2000,%edi
+		INIT_WORK(work, do_emergency_remount);
+    22f7:	48 b8 e0 ff ff ff 0f 	movabs $0xfffffffe0,%rax
+    22fe:	00 00 00 
+    2301:	48 89 02             	mov    %rax,(%rdx)
+    2304:	48 8d 42 08          	lea    0x8(%rdx),%rax
+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+    2308:	48 89 42 08          	mov    %rax,0x8(%rdx)
+	list->prev = list;
+    230c:	48 89 42 10          	mov    %rax,0x10(%rdx)
+    2310:	48 c7 42 18 00 00 00 	movq   $0x0,0x18(%rdx)
+    2317:	00 
+    2318:	e8 00 00 00 00       	callq  231d <emergency_remount+0x5d>
+}
+    231d:	5d                   	pop    %rbp
+    231e:	c3                   	retq   
+    231f:	90                   	nop
+
+0000000000002320 <emergency_thaw_all>:
+{
+    2320:	f3 0f 1e fa          	endbr64 
+    2324:	e8 00 00 00 00       	callq  2329 <emergency_thaw_all+0x9>
+    2329:	55                   	push   %rbp
+    232a:	ba 20 00 00 00       	mov    $0x20,%edx
+    232f:	be 20 00 48 00       	mov    $0x480020,%esi
+    2334:	48 8b 3d 00 00 00 00 	mov    0x0(%rip),%rdi        # 233b <emergency_thaw_all+0x1b>
+    233b:	48 89 e5             	mov    %rsp,%rbp
+    233e:	e8 00 00 00 00       	callq  2343 <emergency_thaw_all+0x23>
+	if (work) {
+    2343:	48 85 c0             	test   %rax,%rax
+    2346:	74 35                	je     237d <emergency_thaw_all+0x5d>
+    2348:	48 89 c2             	mov    %rax,%rdx
+    234b:	48 8b 35 00 00 00 00 	mov    0x0(%rip),%rsi        # 2352 <emergency_thaw_all+0x32>
+    2352:	bf 00 20 00 00       	mov    $0x2000,%edi
+		INIT_WORK(work, do_thaw_all);
+    2357:	48 b8 e0 ff ff ff 0f 	movabs $0xfffffffe0,%rax
+    235e:	00 00 00 
+    2361:	48 89 02             	mov    %rax,(%rdx)
+    2364:	48 8d 42 08          	lea    0x8(%rdx),%rax
+    2368:	48 89 42 08          	mov    %rax,0x8(%rdx)
+    236c:	48 89 42 10          	mov    %rax,0x10(%rdx)
+    2370:	48 c7 42 18 00 00 00 	movq   $0x0,0x18(%rdx)
+    2377:	00 
+    2378:	e8 00 00 00 00       	callq  237d <emergency_thaw_all+0x5d>
+}
+    237d:	5d                   	pop    %rbp
+    237e:	c3                   	retq   
+    237f:	90                   	nop
+
+0000000000002380 <mount_fs>:
+{
+    2380:	f3 0f 1e fa          	endbr64 
+    2384:	e8 00 00 00 00       	callq  2389 <mount_fs+0x9>
+    2389:	55                   	push   %rbp
+    238a:	48 89 e5             	mov    %rsp,%rbp
+    238d:	41 57                	push   %r15
+    238f:	41 89 f7             	mov    %esi,%r15d
+    2392:	41 56                	push   %r14
+	char *secdata = NULL;
+    2394:	45 31 f6             	xor    %r14d,%r14d
+{
+    2397:	41 55                	push   %r13
+    2399:	41 54                	push   %r12
+    239b:	53                   	push   %rbx
+    239c:	48 89 fb             	mov    %rdi,%rbx
+    239f:	48 83 ec 18          	sub    $0x18,%rsp
+	if (data && !(type->fs_flags & FS_BINARY_MOUNTDATA)) {
+    23a3:	48 85 c9             	test   %rcx,%rcx
+    23a6:	74 0a                	je     23b2 <mount_fs+0x32>
+    23a8:	f6 47 08 02          	testb  $0x2,0x8(%rdi)
+    23ac:	0f 84 90 00 00 00    	je     2442 <mount_fs+0xc2>
+	root = type->mount(type, flags, name, data);
+    23b2:	48 8b 43 10          	mov    0x10(%rbx),%rax
+    23b6:	44 89 fe             	mov    %r15d,%esi
+    23b9:	48 89 df             	mov    %rbx,%rdi
+    23bc:	e8 00 00 00 00       	callq  23c1 <mount_fs+0x41>
+    23c1:	4d 89 f0             	mov    %r14,%r8
+    23c4:	49 89 c5             	mov    %rax,%r13
+	if (IS_ERR(root)) {
+    23c7:	48 3d 00 f0 ff ff    	cmp    $0xfffffffffffff000,%rax
+    23cd:	0f 87 bb 00 00 00    	ja     248e <mount_fs+0x10e>
+	sb = root->d_sb;
+    23d3:	4c 8b 60 68          	mov    0x68(%rax),%r12
+	BUG_ON(!sb);
+    23d7:	4d 85 e4             	test   %r12,%r12
+    23da:	0f 84 f7 00 00 00    	je     24d7 <mount_fs+0x157>
+	WARN_ON(!sb->s_bdi);
+    23e0:	49 83 bc 24 d8 00 00 	cmpq   $0x0,0xd8(%r12)
+    23e7:	00 00 
+    23e9:	0f 84 ea 00 00 00    	je     24d9 <mount_fs+0x159>
+	sb->s_flags |= SB_BORN;
+    23ef:	49 81 4c 24 50 00 00 	orq    $0x20000000,0x50(%r12)
+    23f6:	00 20 
+	error = security_sb_kern_mount(sb, flags, secdata);
+    23f8:	4c 89 f2             	mov    %r14,%rdx
+    23fb:	44 89 fe             	mov    %r15d,%esi
+    23fe:	4c 89 e7             	mov    %r12,%rdi
+    2401:	e8 00 00 00 00       	callq  2406 <mount_fs+0x86>
+	if (error)
+    2406:	85 c0                	test   %eax,%eax
+    2408:	0f 85 a9 00 00 00    	jne    24b7 <mount_fs+0x137>
+	WARN((sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
+    240e:	49 8b 54 24 20       	mov    0x20(%r12),%rdx
+    2413:	48 85 d2             	test   %rdx,%rdx
+    2416:	0f 88 85 00 00 00    	js     24a1 <mount_fs+0x121>
+	up_write(&sb->s_umount);
+    241c:	49 8d 7c 24 70       	lea    0x70(%r12),%rdi
+    2421:	e8 00 00 00 00       	callq  2426 <mount_fs+0xa6>
+	return (char *)get_zeroed_page(GFP_KERNEL);
+}
+
+static inline void free_secdata(void *secdata)
+{
+	free_page((unsigned long)secdata);
+    2426:	31 f6                	xor    %esi,%esi
+    2428:	4c 89 f7             	mov    %r14,%rdi
+    242b:	e8 00 00 00 00       	callq  2430 <mount_fs+0xb0>
+}
+    2430:	48 83 c4 18          	add    $0x18,%rsp
+    2434:	4c 89 e8             	mov    %r13,%rax
+    2437:	5b                   	pop    %rbx
+    2438:	41 5c                	pop    %r12
+    243a:	41 5d                	pop    %r13
+    243c:	41 5e                	pop    %r14
+    243e:	41 5f                	pop    %r15
+    2440:	5d                   	pop    %rbp
+    2441:	c3                   	retq   
+    2442:	f3 0f 1e fa          	endbr64 
+	return (char *)get_zeroed_page(GFP_KERNEL);
+    2446:	bf c0 00 60 00       	mov    $0x6000c0,%edi
+    244b:	48 89 4d c8          	mov    %rcx,-0x38(%rbp)
+    244f:	49 c7 c5 f4 ff ff ff 	mov    $0xfffffffffffffff4,%r13
+    2456:	48 89 55 d0          	mov    %rdx,-0x30(%rbp)
+    245a:	e8 00 00 00 00       	callq  245f <mount_fs+0xdf>
+		if (!secdata)
+    245f:	48 85 c0             	test   %rax,%rax
+    2462:	74 cc                	je     2430 <mount_fs+0xb0>
+		error = security_sb_copy_data(data, secdata);
+    2464:	48 8b 4d c8          	mov    -0x38(%rbp),%rcx
+    2468:	48 89 c6             	mov    %rax,%rsi
+    246b:	48 89 45 c0          	mov    %rax,-0x40(%rbp)
+    246f:	49 89 c6             	mov    %rax,%r14
+    2472:	48 89 cf             	mov    %rcx,%rdi
+    2475:	e8 00 00 00 00       	callq  247a <mount_fs+0xfa>
+		if (error)
+    247a:	48 8b 4d c8          	mov    -0x38(%rbp),%rcx
+    247e:	4c 8b 45 c0          	mov    -0x40(%rbp),%r8
+    2482:	85 c0                	test   %eax,%eax
+    2484:	48 8b 55 d0          	mov    -0x30(%rbp),%rdx
+    2488:	0f 84 24 ff ff ff    	je     23b2 <mount_fs+0x32>
+	free_page((unsigned long)secdata);
+    248e:	31 f6                	xor    %esi,%esi
+    2490:	4c 89 c7             	mov    %r8,%rdi
+    2493:	89 45 d0             	mov    %eax,-0x30(%rbp)
+    2496:	e8 00 00 00 00       	callq  249b <mount_fs+0x11b>
+    249b:	4c 63 6d d0          	movslq -0x30(%rbp),%r13
+}
+    249f:	eb 8f                	jmp    2430 <mount_fs+0xb0>
+	WARN((sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
+    24a1:	48 8b 33             	mov    (%rbx),%rsi
+    24a4:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+    24ab:	e8 00 00 00 00       	callq  24b0 <mount_fs+0x130>
+    24b0:	0f 0b                	ud2    
+    24b2:	e9 65 ff ff ff       	jmpq   241c <mount_fs+0x9c>
+	dput(root);
+    24b7:	4c 89 ef             	mov    %r13,%rdi
+    24ba:	89 45 d0             	mov    %eax,-0x30(%rbp)
+    24bd:	4c 89 75 c8          	mov    %r14,-0x38(%rbp)
+    24c1:	e8 00 00 00 00       	callq  24c6 <mount_fs+0x146>
+	deactivate_locked_super(sb);
+    24c6:	4c 89 e7             	mov    %r12,%rdi
+    24c9:	e8 00 00 00 00       	callq  24ce <mount_fs+0x14e>
+    24ce:	8b 45 d0             	mov    -0x30(%rbp),%eax
+    24d1:	4c 8b 45 c8          	mov    -0x38(%rbp),%r8
+    24d5:	eb b7                	jmp    248e <mount_fs+0x10e>
+	BUG_ON(!sb);
+    24d7:	0f 0b                	ud2    
+	WARN_ON(!sb->s_bdi);
+    24d9:	0f 0b                	ud2    
+    24db:	e9 0f ff ff ff       	jmpq   23ef <mount_fs+0x6f>
+
+Disassembly of section .text..refcount:
+
+0000000000000000 <.text..refcount>:
+   0:	48 8d 48 38          	lea    0x38(%rax),%rcx
+   4:	0f 0b                	ud2    
+
+Disassembly of section .text.unlikely:
+
+0000000000000000 <generic_shutdown_super.cold>:
+			   sb->s_id);
+   0:	48 8d b3 d8 03 00 00 	lea    0x3d8(%rbx),%rsi
+			printk("VFS: Busy inodes after unmount of %s. "
+   7:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+   e:	e8 00 00 00 00       	callq  13 <generic_shutdown_super.cold+0x13>
+  13:	e9 00 00 00 00       	jmpq   18 <thaw_super_locked.cold>
+
+0000000000000018 <thaw_super_locked.cold>:
+  18:	f3 0f 1e fa          	endbr64 
+			printk(KERN_ERR
+  1c:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+  23:	e8 00 00 00 00       	callq  28 <thaw_super_locked.cold+0x10>
+			up_write(&sb->s_umount);
+  28:	49 8d 7c 24 70       	lea    0x70(%r12),%rdi
+  2d:	49 c7 84 24 c0 03 00 	movq   $0xffffffffffffffff,0x3c0(%r12)
+  34:	00 ff ff ff ff 
+  39:	49 c7 84 24 40 03 00 	movq   $0xffffffffffffffff,0x340(%r12)
+  40:	00 ff ff ff ff 
+  45:	49 c7 84 24 c0 02 00 	movq   $0xffffffffffffffff,0x2c0(%r12)
+  4c:	00 ff ff ff ff 
+  51:	e8 00 00 00 00       	callq  56 <thaw_super_locked.cold+0x3e>
+  56:	e9 00 00 00 00       	jmpq   5b <freeze_super.cold>
+
+000000000000005b <freeze_super.cold>:
+			printk(KERN_ERR
+  5b:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+  62:	89 45 cc             	mov    %eax,-0x34(%rbp)
+  65:	e8 00 00 00 00       	callq  6a <freeze_super.cold+0xf>
+		percpu_up_write(sb->s_writers.rw_sem + level);
+  6a:	48 89 df             	mov    %rbx,%rdi
+			sb->s_writers.frozen = SB_UNFROZEN;
+  6d:	41 c7 84 24 38 02 00 	movl   $0x0,0x238(%r12)
+  74:	00 00 00 00 00 
+		percpu_up_write(sb->s_writers.rw_sem + level);
+  79:	e8 00 00 00 00       	callq  7e <freeze_super.cold+0x23>
+  7e:	4c 89 ff             	mov    %r15,%rdi
+  81:	e8 00 00 00 00       	callq  86 <freeze_super.cold+0x2b>
+  86:	48 8b 7d d0          	mov    -0x30(%rbp),%rdi
+  8a:	e8 00 00 00 00       	callq  8f <freeze_super.cold+0x34>
+			wake_up(&sb->s_writers.wait_unfrozen);
+  8f:	49 8d bc 24 40 02 00 	lea    0x240(%r12),%rdi
+  96:	00 
+  97:	31 c9                	xor    %ecx,%ecx
+  99:	ba 01 00 00 00       	mov    $0x1,%edx
+  9e:	be 03 00 00 00       	mov    $0x3,%esi
+  a3:	e8 00 00 00 00       	callq  a8 <freeze_super.cold+0x4d>
+			deactivate_locked_super(sb);
+  a8:	4c 89 e7             	mov    %r12,%rdi
+  ab:	e8 00 00 00 00       	callq  b0 <freeze_super.cold+0x55>
+			return ret;
+  b0:	44 8b 4d cc          	mov    -0x34(%rbp),%r9d
+  b4:	45 89 cd             	mov    %r9d,%r13d
+  b7:	e9 00 00 00 00       	jmpq   bc <__kstrtab_kill_anon_super+0xf>

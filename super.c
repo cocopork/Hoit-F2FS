@@ -138,6 +138,7 @@ enum {
 	Opt_test_dummy_encryption,
 	Opt_err,
 	Opt_nvm_path, //增加nvm的挂载路径参数
+	Opt_byte_nvm_path,//ZN:增加按字节寻址nvm的挂载路径参数
 };
 
 /* 类似一个字典结构，存放挂载参数 */
@@ -196,6 +197,7 @@ static match_table_t f2fs_tokens = {
 	{Opt_fsync, "fsync_mode=%s"},
 	{Opt_test_dummy_encryption, "test_dummy_encryption"},
 	{Opt_nvm_path, "nvm_path=%s"}, /* 增加nvm的挂载路径参数，%s指的是实际的nvm设备路径 */
+	{Opt_byte_nvm_path, "byte_nvm_path=%s"}, /* 增加nvm的挂载路径参数，%s指的是实际的nvm设备路径 */
 	{Opt_err, NULL},
 };
 
@@ -375,15 +377,17 @@ static int parse_options(struct super_block *sb, char *options)
 #ifdef CONFIG_QUOTA
 	int ret;
 #endif
-	bool ignore_nvmpath=false;   //是否忽略nvm挂载选项
-
+	bool ignore_nvmpath=false;  //是否忽略nvm挂载选项
+	bool nvm_ready=false;		//块设备nvm准备完毕
+	bool need_nvm=false;		//规定挂载字节设备nvm需要同时挂载块设备nvm
 	/*
 		解析挂载选项之前，首先判断fsb中是否已经设置ndev_path
 	*/
 	/* start */
-	if(sbi->raw_super->ndev_path[0]) {
+	if(sbi->raw_super->ndev_path[NVM_PATH_IDX]) {
 		//非第一次挂载，忽略nvm挂载选项
 		ignore_nvmpath = true;
+		nvm_ready = true;
 		nvm_debug(NVM_INFO,"ignore nvmpath");
 	}
 	/* end */
@@ -407,7 +411,7 @@ static int parse_options(struct super_block *sb, char *options)
 			（例如：background_gc=2，则p指的是整个字符串“background_gc=2”，args指的是“2”）
 		*/
 		token = match_token(p, f2fs_tokens, args);
-
+		printk(KERN_INFO"ZN trap: p: %s, token: %d",p,token);
 		/*
 			对于有挂载值的挂载参数，需要获得挂载选项对应的挂载值；
 			没有挂载值，则不需要获得挂载值
@@ -418,16 +422,36 @@ static int parse_options(struct super_block *sb, char *options)
 		case Opt_nvm_path:
 			if(!ignore_nvmpath) { //第一次挂载
 				name = match_strdup(&args[0]); //获得挂载路径
-				if (!name)
+				if (!name){
+					printk(KERN_INFO"ZN trap: ndev_path[NVM_PATH_IDX] error!");
 					return -ENOMEM;
-
+				}
+				printk(KERN_INFO"ZN trap: option ndev_path[NVM_PATH_IDX]: %s",name);
 				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
-				strcpy(sbi->raw_super->ndev_path, name);
+				strcpy(sbi->raw_super->ndev_path[NVM_PATH_IDX], name);
 				sbi->nsbi->nvm_flag |= NVM_FIRST_MOUNR;
+				nvm_ready = true;
+				
 			}
 			//非第一次挂载直接忽略该挂载选项
 			break;
 		/* end */
+
+		/* ZN begin */
+		case Opt_byte_nvm_path:
+			if(!ignore_nvmpath || nvm_ready) {//第一次挂载，
+				name = match_strdup(&args[0]); //获得挂载路径
+				if (!name)
+					return -ENOMEM;
+
+				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
+				strcpy(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], name);
+				printk(KERN_INFO"ZN trap: option ndev_path[BYTE_NVM_PATH_IDX]: %s",name);
+				need_nvm = true;
+			}
+			break;
+		/* ZN end */
+
 		case Opt_gc_background:
 			name = match_strdup(&args[0]);
 
@@ -852,7 +876,11 @@ static int parse_options(struct super_block *sb, char *options)
 			return -EINVAL;
 		}
 	}
-
+	/* ZN begin */
+	// 字节nvm准备好，而块nvm未准备好
+	if (need_nvm && !nvm_ready)
+		return -EINVAL;
+	/* ZN end */
 	/* Not pass down write hints if the number of active logs is lesser
 	 * than NR_CURSEG_TYPE.
 	 */
@@ -2740,6 +2768,15 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	unsigned int res;
 	/* end */
 
+	/* ZN:start */
+	/* 增加nvm_super_block结构 */
+	struct nvm_super_block *byte_nsb=NULL;
+	/* 增加nvm_sb_info内存结构 */
+	struct nvm_sb_info *byte_nsbi;
+	/* 增加nvm设备的block_device */
+	struct block_device *byte_nbdev;
+	/* ZN: end */
+
 	int err;
 	bool retry = true, need_fsck = false;
 	char *options = NULL;
@@ -2760,7 +2797,6 @@ try_onemore:
 		return -ENOMEM;
 
 	sbi->sb = sb;
-
 	/* ADD:申请nvm_sb_info对象 */
 	/* start */
 	nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
@@ -2769,6 +2805,13 @@ try_onemore:
 
 	sbi->nsbi = nsbi;
 	/* end */
+
+	/* ZN: start */
+	byte_nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
+	if(!byte_nsbi)
+		return -ENOMEM;
+	sbi->byte_nsbi = byte_nsbi;
+	/* ZN: end */
 
 	/* Load the checksum driver */
 	sbi->s_chksum_driver = crypto_alloc_shash("crc32", 0, 0);
@@ -2940,7 +2983,14 @@ try_onemore:
 	/* 读取NVM设备信息，关联到nsbi*/
 
 	//TODO:根据ndev得到nvm设备的block_device,f2fs_fs_type参数是否应该替换成是NULL？？？
-	nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path, mode, NULL);
+	nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[NVM_PATH_IDX], mode, NULL);
+	printk(KERN_INFO"ZN trap: blkdev_get_by_path ndev_path[NVM_PATH_IDX] %s",sbi->raw_super->ndev_path[NVM_PATH_IDX]);
+	printk(KERN_INFO"ZN trap: IS_ERR(nbdev) %d",IS_ERR(nbdev));
+	if (IS_ERR(nbdev))
+	{
+		goto free_io_dummy;
+	}
+	
 	nsbi->nbdev = nbdev;
 	nsbi->cur_alloc_nvm_segoff = 0;// 当前NVM段分配的位置，挂载时置为0
 
@@ -3036,6 +3086,10 @@ try_onemore:
 	}
 	
 	/* end */
+
+	/* ZN begin */
+	byte_nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], mode, NULL);
+	/* ZN end */
 
 	/* Initialize device list */
 	err = f2fs_scan_devices(sbi);

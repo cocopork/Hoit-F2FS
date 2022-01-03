@@ -6,4 +6,4 @@ insmod f2fs.ko
 
 mkfs.f2fs -f -t f2fs /dev/sda3
 
-mount -o nvm_path=/dev/pmem0 /dev/sda3 /mnt/f2fs
+mount -o nvm_path=/dev/sda4,byte_nvm_path=/dev/pmem0 /dev/sda3 /mnt/f2fs

@@ -11,7 +11,7 @@ f2fs-$(CONFIG_F2FS_IO_TRACE) += trace.o
 
 KERNELDIR:= /lib/modules/$(shell uname -r)/build
 PWD:=$(shell pwd)
-
+EXTRA_CFLAGS = -g
 ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 
 default:

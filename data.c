@@ -1498,6 +1498,14 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 		/*
 		 * Map blocks using the previous result first.
 		 */
+		/**
+		 * ZN：
+ 		 * map.m_lblk是上一个block_in_file
+ 		 * map.m_lblk + map.m_len是需要读取长度的最后一个blokaddr
+ 		 * 因此这里的意思是，如果是在这个 map.m_lblk < block_in_file < map.m_lblk + map.m_len 
+ 		 * 这个范围里面，不需要map，直接将上次的blkaddr+1就是需要的地址
+ 		 * 
+		 */
 		if ((map.m_flags & F2FS_MAP_MAPPED) &&
 			block_in_file > map.m_lblk &&
 			block_in_file < (map.m_lblk + map.m_len))
@@ -1519,7 +1527,7 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 		}
 		got_it:
 		if ((map.m_flags & F2FS_MAP_MAPPED)) {
-			block_nr = map.m_pblk + block_in_file - map.m_lblk;
+			block_nr = map.m_pblk + block_in_file - map.m_lblk; //ZN：block_in_file的对应物理地址
 			SetPageMappedToDisk(page);
 
 			if (!PageUptodate(page) && !cleancache_get_page(page)) {

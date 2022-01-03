@@ -313,6 +313,7 @@ struct bio *nvm_redirect_bio(struct f2fs_sb_info *sbi, struct bio *bio, enum pag
 }
 
 int nvm_redirect_dio(struct f2fs_sb_info *sbi, struct buffer_head *bh, unsigned int blk_nums, int write) {
+	printk(KERN_INFO"ZN trap: sbi->nsbi %p",sbi->nsbi);
 	struct nvm_sb_info *nsbi = sbi->nsbi;
 	block_t ssd_blk_addr, nvm_blk_addr;
 	unsigned int ssd_segno, ssd_main_segoff, nvm_main_segoff;//查找的段号在ssd和nvm MAIN区域的偏移量
