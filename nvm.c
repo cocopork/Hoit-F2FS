@@ -1,13 +1,16 @@
 //
 // Created by ypf on 18-11-29.
 //
+//TODO：2022年1月6日 ZN 添加新的文件导致编译失败？
 
 #include <linux/blkdev.h>
 #include <linux/fs.h>
 #include "nvm.h"
 #include "segment.h"
 #include "f2fs.h"
-
+/* ZN begin */
+#include <linux/dax.h>
+/* ZN end */
 /**
  * 将mpt cache拷贝到mapping区域
  * ZN：拷贝到nsbi的地址空间，也就是高速缓存
@@ -26,7 +29,7 @@ void nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all) {
 	//如果设置flush_all，无条件刷回所有MPT page
 	if (flush_all) {
 		mpt_pgoff = 0;
-	} else {
+	} else {/* ZN：从0位置开始找比特位为1的位置，如果没有，则返回map的比特数（mpt_dirty_map_bits） */
 		mpt_pgoff = find_next_bit(nsbi->mpt_dirty_map, nsbi->mpt_dirty_map_bits, 0);
 	}
 
@@ -70,13 +73,14 @@ struct page *get_next_mpt_page(struct f2fs_sb_info *sbi, int mpt_pgoff) {
 	struct page *dst_page;//实际要写的mapping中page地址
 	pgoff_t block_addr;//实际写的page对应硬盘的块号，也是META区域的偏移
 
-	block_addr = nsbi->nsb->mpt_blkaddr + mpt_pgoff;
+	block_addr = nsbi->nsb->mpt_blkaddr + mpt_pgoff;/* ZN：这是在NVM上的物理地址 */
 	///根据版本位图决定返回双份seg哪一个seg中的地址
 	if (!f2fs_test_bit(mpt_pgoff, nsbi->mpt_ver_map))
 		block_addr += sbi->blocks_per_seg;
 	//翻转位，切换版本（设置为当前使用的版本）
 	f2fs_change_bit(mpt_pgoff, sbi->nsbi->mpt_ver_map);
 	//获取要写的page，这里只获取内存page，因为我们要拷贝进去的是最新数据
+	printk(KERN_INFO"ZN trap: f2fs grab mpt page");
 	dst_page = f2fs_grab_meta_page(sbi, block_addr);
 	return dst_page;
 }
@@ -511,8 +515,8 @@ void __nvm_debug(int level, const char *func,
 	va_end(args);
 }
 
-int read_meta_page_from_SSD(struct f2fs_sb_info *sbi) {
-	struct nvm_sb_info *nsbi = sbi->nsbi;
+int read_meta_page_from_SSD(struct f2fs_sb_info *sbi, bool is_byte_nvm) {
+	struct nvm_sb_info *nsbi = is_byte_nvm? sbi->byte_nsbi : sbi->nsbi;
 //	struct nvm_super_block *nsb = nsbi->nsb;
 
 	/* 起始位置的逻辑块号，结束位置的逻辑块号
@@ -662,6 +666,7 @@ unsigned int init_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *
 	int i = 0;
 	int j = 0;
 	nsbi->nsb = nsb;
+	nsbi->byte_private = NULL;
 	/* ZN:内存中保存各种区域的位图，version_map和dirty_map应该是论文MPT里的后面两位标志 */
 	/* 1、为MPT版本位图申请空间,单位：字节 */
 	nsbi->mpt_ver_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(nsb->mpt_ver_map_bits), GFP_KERNEL);

@@ -28,6 +28,10 @@
 
 //COMPLETED:导入头文件
 #include "nvm.h"
+/* ZN begin */
+//f2fs.h一定要导入byte_nvm.h，否则编译失败。。
+#include "byte_nvm.h"
+/* ZN end */
 
 #define __FS_HAS_ENCRYPTION IS_ENABLED(CONFIG_F2FS_FS_ENCRYPTION)
 #include <linux/fscrypt.h>

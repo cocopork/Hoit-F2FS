@@ -1,0 +1,38 @@
+In file included from /home/ggboy/linux_source/fs_mod/f2fs/super.c:30:
+/home/ggboy/linux_source/fs_mod/f2fs/f2fs.h: In function ‘blkaddr_in_node’:
+/home/ggboy/linux_source/fs_mod/f2fs/f2fs.h:2089:30: warning: taking address of packed member of ‘struct f2fs_inode’ may result in an unaligned pointer value [-Waddress-of-packed-member]
+ 2089 |  return RAW_IS_INODE(node) ? node->i.i_addr : node->dn.addr;
+      |                              ^~~~
+/home/ggboy/linux_source/fs_mod/f2fs/f2fs.h:2089:47: warning: taking address of packed member of ‘struct direct_node’ may result in an unaligned pointer value [-Waddress-of-packed-member]
+ 2089 |  return RAW_IS_INODE(node) ? node->i.i_addr : node->dn.addr;
+      |                                               ^~~~
+/home/ggboy/linux_source/fs_mod/f2fs/super.c: In function ‘f2fs_fill_super’:
+/home/ggboy/linux_source/fs_mod/f2fs/super.c:3149:9: error: implicit declaration of function ‘init_byte_nvm_sb_info’; did you mean ‘init_nvm_sb_info’? [-Werror=implicit-function-declaration]
+ 3149 |   res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段
+      |         ^~~~~~~~~~~~~~~~~~~~~
+      |         init_nvm_sb_info
+In file included from /home/ggboy/linux_source/fs_mod/f2fs/super.c:11:
+/home/ggboy/linux_source/fs_mod/f2fs/super.c: At top level:
+./include/linux/module.h:132:6: warning: ‘init_module’ specifies less restrictive attribute than its target ‘init_f2fs_fs’: ‘cold’ [-Wmissing-attributes]
+  132 |  int init_module(void) __attribute__((alias(#initfn)));
+      |      ^~~~~~~~~~~
+/home/ggboy/linux_source/fs_mod/f2fs/super.c:3561:1: note: in expansion of macro ‘module_init’
+ 3561 | module_init(init_f2fs_fs)
+      | ^~~~~~~~~~~
+/home/ggboy/linux_source/fs_mod/f2fs/super.c:3480:19: note: ‘init_module’ target declared here
+ 3480 | static int __init init_f2fs_fs(void)
+      |                   ^~~~~~~~~~~~
+In file included from /home/ggboy/linux_source/fs_mod/f2fs/super.c:11:
+./include/linux/module.h:138:7: warning: ‘cleanup_module’ specifies less restrictive attribute than its target ‘exit_f2fs_fs’: ‘cold’ [-Wmissing-attributes]
+  138 |  void cleanup_module(void) __attribute__((alias(#exitfn)));
+      |       ^~~~~~~~~~~~~~
+/home/ggboy/linux_source/fs_mod/f2fs/super.c:3562:1: note: in expansion of macro ‘module_exit’
+ 3562 | module_exit(exit_f2fs_fs)
+      | ^~~~~~~~~~~
+/home/ggboy/linux_source/fs_mod/f2fs/super.c:3546:20: note: ‘cleanup_module’ target declared here
+ 3546 | static void __exit exit_f2fs_fs(void)
+      |                    ^~~~~~~~~~~~
+cc1: some warnings being treated as errors
+make[2]: *** [scripts/Makefile.build:317：/home/ggboy/linux_source/fs_mod/f2fs/super.o] 错误 1
+make[1]: *** [Makefile:1500：_module_/home/ggboy/linux_source/fs_mod/f2fs] 错误 2
+make: *** [Makefile:18：default] 错误 2

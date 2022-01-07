@@ -35,7 +35,9 @@
 #include "trace.h"
 //COMPLETED:添加nvm相关头文件
 #include "nvm.h"
-
+/* ZN begin */
+#include "byte_nvm.h"
+/* ZN end */
 #define CREATE_TRACE_POINTS
 #include <trace/events/f2fs.h>
 
@@ -392,7 +394,6 @@ static int parse_options(struct super_block *sb, char *options)
 	}
 	/* end */
 
-
 	if (!options)
 		return 0;
 
@@ -411,7 +412,9 @@ static int parse_options(struct super_block *sb, char *options)
 			（例如：background_gc=2，则p指的是整个字符串“background_gc=2”，args指的是“2”）
 		*/
 		token = match_token(p, f2fs_tokens, args);
-
+		// printk(KERN_ERR"ZN trap: token=%d p=%s",token,p);
+		// printk(KERN_ERR"ZN trap: token=%d p=%s",token,p);
+		f2fs_msg(sb, KERN_INFO, "ZN trap: token=%d p=%s",token,p);
 		/*
 			对于有挂载值的挂载参数，需要获得挂载选项对应的挂载值；
 			没有挂载值，则不需要获得挂载值
@@ -443,6 +446,7 @@ static int parse_options(struct super_block *sb, char *options)
 				if (!name)
 					return -ENOMEM;
 
+				sbi->byte_nsbi->nvm_flag |= NVM_FIRST_MOUNR;
 				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
 				strcpy(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], name);
 				printk(KERN_INFO"ZN trap: option ndev_path[BYTE_NVM_PATH_IDX]: %s",name);
@@ -2774,6 +2778,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	struct nvm_sb_info *byte_nsbi;
 	/* 增加nvm设备的block_device */
 	struct block_device *byte_nbdev;
+	bool meta_page_in_SSD = false;//SSD中的数据是否已经读入sbi地址空间
 	/* ZN: end */
 
 	int err;
@@ -2995,7 +3000,7 @@ try_onemore:
 	sectorsize = 1 << (raw_super->log_sectorsize); //每个扇区大小
 	/* 创建NVM超级块结构nsb，判断是否是第一次挂载 */
 	if(nsbi->nvm_flag & NVM_FIRST_MOUNR) {
-		nvm_debug(NVM_INFO,"first mount!");
+		nvm_debug(NVM_INFO,"block nvm first mount!");
 		nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
 		if(!nsb) {
 			return -ENOMEM;
@@ -3015,6 +3020,8 @@ try_onemore:
 		
 		/* NVM main区域和mpt区域起始地址相差两个segment */
 		nsb->main_blkaddr = nsb->mpt_blkaddr + MAIN_OFFSET * segmentsize;
+		nsb->ra_blkaddr = nsb->main_blkaddr;
+		nsb->ra_blk_nums = 0;
 		nsb->main_first_segno = (raw_super->main_blkaddr - raw_super->segment0_blkaddr)/segmentsize + MAIN_OFFSET;
 		nsb->main_segment_nums = (blockcount - nsb->main_blkaddr) / segmentsize; //NVM main区域segment总数,不足一个seg忽略掉
 		nsb->main_segment_free_nums = nsb->main_segment_nums;
@@ -3042,7 +3049,10 @@ try_onemore:
 		//! 2021年12月21日读到这
 		/* 初始化NVM设备布局 */
 		//ZN :主要是把SSD中的META区读入sbi的address_space中
-		read_meta_page_from_SSD(sbi); //从SSD读全部META区域
+		if(!meta_page_in_SSD){
+			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
+			meta_page_in_SSD = true;
+		}
 		
 		/*先刷回MPT，在刷回NSB*/
 		nvm_flush_mpt_pages(sbi,1);	  //将mpt cache拷贝到mapping区域
@@ -3085,7 +3095,68 @@ try_onemore:
 	/* end */
 
 	/* ZN begin */
+	/* 先获取块设备信息，用DAX访问pmem0也要暂时被视为块设备 */
 	byte_nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], mode, NULL);
+	if (IS_ERR(nbdev))
+		goto free_io_dummy;
+	
+	byte_nsbi->nbdev = byte_nbdev;
+	byte_nsbi->cur_alloc_nvm_segoff = 0;
+
+	/* 判断是否为第一次挂载 */
+	if (byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
+	{
+		nvm_debug(NVM_INFO,"byte nvm first mount!");
+		byte_nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
+		if(!byte_nsb)
+			return -ENOMEM;
+		/* 初始化nvm_super_block的字段 */
+		memcpy(byte_nsb->uuid, raw_super->uuid, sizeof(raw_super->uuid));
+		byte_nsb->mpt_blkaddr = raw_super->main_blkaddr;
+
+		/* 重复计算各个单位的大小关系，力求与学长的项目低耦合 */
+		// Byte NVM的总容量(扇区为单位)
+		nsize = byte_nbdev->bd_part->nr_sects;
+
+		blockcount = SECTOR_TO_BLOCK(nsize);
+		
+		segmentsize = sbi->blocks_per_seg; //一个segment含有几个块；以block(4KB)为单位
+
+		/* NVM main区域和mpt区域起始地址相差两个segment */
+		//根据MAIN区域剩余空间百分比划分 Record Area区域
+		byte_nsb->ra_blkaddr = byte_nsb->mpt_blkaddr + MAIN_OFFSET * segmentsize;
+		byte_nsb->ra_blk_nums = blockcount * RA_PRECENTAGE/100;
+		byte_nsb->main_blkaddr = byte_nsb->ra_blkaddr + byte_nsb->ra_blk_nums;
+		byte_nsb->main_first_segno = (raw_super->main_blkaddr - raw_super->segment0_blkaddr)/segmentsize + MAIN_OFFSET;
+		byte_nsb->main_segment_nums = (blockcount - byte_nsb->main_blkaddr) / segmentsize; //NVM main区域segment总数,不足一个seg忽略掉
+		byte_nsb->main_segment_free_nums = byte_nsb->main_segment_nums;
+
+		/* 计算MPT表大小(即SSD和NVM main区域segment总数) */
+		mpt_ssd_count = raw_super->segment_count_main;
+		mpt_nvm_count = byte_nsb->main_segment_nums;
+		byte_nsb->mpt_entries = mpt_nvm_count + mpt_ssd_count;
+
+		/* 计算lfu计数数组占用的物理块地址，共两份 */
+		byte_nsb->lfu_blkaddr0 = 2;
+		byte_nsb->lfu_blkaddr1 = 2 + (segmentsize - 2) / 2;
+
+		/* MPT版本位图的大小，，MPT也有自己的位图，一位对应一个全是mpt_entry的块*/
+		byte_nsb->mpt_ver_map_bits = (nsb->mpt_entries* sizeof(unsigned int) - 1)/PAGE_SIZE + 1;
+
+		byte_nsb->map[0] = '0';	//用于记录位图的起始位置	
+		
+		/* 初始化nvm_sb_info的字段 */
+		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
+		nvm_assert(!res);
+
+		read_meta_page_from_SSD(sbi, true); //从SSD读全部META区域
+		//TODO：刷回MPT和byte_nsb，开始需要使用dax API
+		
+
+	}
+
+	
+
 	/* ZN end */
 
 	/* Initialize device list */

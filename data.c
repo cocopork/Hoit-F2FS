@@ -318,7 +318,7 @@ static void __submit_merged_bio(struct f2fs_bio_info *io) {
 		trace_f2fs_prepare_read_bio(io->sbi->sb, fio->type, io->bio);
 	else
 		trace_f2fs_prepare_write_bio(io->sbi->sb, fio->type, io->bio);
-
+	printk(KERN_INFO"ZN trap: fio->type",fio->type);
 	__submit_bio(io->sbi, io->bio, fio->type);
 	io->bio = NULL;
 }
@@ -381,7 +381,7 @@ static void __f2fs_submit_merged_write(struct f2fs_sb_info *sbi,
 	struct f2fs_bio_info *io = sbi->write_io[btype] + temp;
 
 	down_write(&io->io_rwsem);
-
+	printk(KERN_INFO"ZN trap: type : %d",type);
 	/* change META to META_FLUSH in the checkpoint procedure */
 	if (type >= META_FLUSH) {
 		io->fio.type = META_FLUSH;

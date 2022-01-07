@@ -14,7 +14,10 @@
 #define CP_LFU_VER_FLAG    0x00010000
 //nvm MAIN区域相对于SSD MAIN区域段偏移
 #define MAIN_OFFSET 2
-
+/* ZN begin */
+//记录区占可用空间百分比，单位：%
+#define RA_PRECENTAGE 25
+/* ZN end */
 /*NVM标志位*/
 //记录nsb是否变脏并回写
 #define NVM_NSB_DIRTY 0x01
@@ -127,9 +130,11 @@ enum page_type;
 struct nvm_super_block {
 	__u8 uuid[16];//128-bit uuid，与所要加速的SSD设备UUID相同
 	__le32 mpt_blkaddr;//映射表区域起始块地址
+	__le32 ra_blkaddr; //记录区起始块地址，若没有记录区，则与MAIN区域起始块地址相等
 	__le32 main_blkaddr;//NVM中MAIN区域起始块地址
 	__le32 lfu_blkaddr0;//第一个lfu NVM段访问计数数组的块地址
 	__le32 lfu_blkaddr1;//第二个lfu NVM段访问计数数组的块地址
+	__le32 ra_blk_nums;
 	unsigned int main_first_segno;//nvm MAIN区域首个segment的segment号
 	__le32 main_segment_nums;//NVM中MAIN区域segment总数，该值也是segment位图（segment_map）的位数
 	__le32 main_segment_free_nums;//NVM中MAIN区域空闲segment总数
@@ -138,6 +143,14 @@ struct nvm_super_block {
 	char map[1];//硬盘中超级块从该位置开始，存储了以下两者map信息,这个结构仅仅用作定位
 //    unsigned long * mpt_ver_map;  //mpt版本位图：记录每个有效mpt块在双份seg中的哪一个
 //    unsigned long * segment_map;  //main区域segment有效性位图
+};
+
+/*byte_private，byte nvm的专门信息结构体，在nvm_sb_info的基础上添加一些信息*/
+struct byte_private
+{
+	struct dax_device *dax_dev;	/* DAX 设备信息 */
+	void *virt_addr;/* DAX对应虚拟地址 */
+	
 };
 
 ///与nvm相关的内存结构
@@ -188,6 +201,10 @@ struct nvm_sb_info {
 	struct page *ssd_to_nvm_start_page;// 用于ssd数据段迁移到nvm时存储数据
 	struct mutex nvm_move_lock;// 锁定nvm段迁移，避免真回收，预回收以及热迁移发生冲突
 	spinlock_t aqusz_lock;//更新平均队列长度加锁
+
+	/* ZN begin */
+	struct byte_private *byte_private;	//记录字节设备额外信息
+	/* ZN end */
 
 };
 
@@ -330,7 +347,7 @@ void create_mapping(struct f2fs_sb_info *sbi, unsigned int ssd_segoff, unsigned 
 void nvm_set_ckpt_segment_map(struct f2fs_sb_info *sbi);
 
 /* 读取SSD全部META区域 */
-int read_meta_page_from_SSD(struct f2fs_sb_info *sbi);
+int read_meta_page_from_SSD(struct f2fs_sb_info *sbi, bool is_byte_nvm);
 
 //写回NVM META区域
 int flush_meta_page_to_NVM(struct f2fs_sb_info *sbi);
@@ -353,6 +370,14 @@ void f2fs_get_mpt(struct f2fs_sb_info *sbi);
 
 //读取LFU，将LFU访问计数数组保存到cache中
 void f2fs_get_lfu(struct f2fs_sb_info *sbi);
+
+/* ZN begin */
+/*
+ *  byte_nvm.c函数声明 
+ */
+// unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *nsb);
+// void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all);
+/* ZN end */
 
 /**
  * gc_nvm.c函数声明
