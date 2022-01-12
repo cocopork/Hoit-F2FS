@@ -80,7 +80,6 @@ struct page *get_next_mpt_page(struct f2fs_sb_info *sbi, int mpt_pgoff) {
 	//翻转位，切换版本（设置为当前使用的版本）
 	f2fs_change_bit(mpt_pgoff, sbi->nsbi->mpt_ver_map);
 	//获取要写的page，这里只获取内存page，因为我们要拷贝进去的是最新数据
-	printk(KERN_INFO"ZN trap: f2fs grab mpt page");
 	dst_page = f2fs_grab_meta_page(sbi, block_addr);
 	return dst_page;
 }
@@ -690,7 +689,7 @@ unsigned int init_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *
 	spin_lock_init(&nsbi->lfu_half_lock);
 	spin_lock_init(&nsbi->aqusz_lock);
 
-	printk(KERN_INFO"ZN trap: mpt_entries size = %d", nsb->mpt_entries);
+	printk(KERN_INFO"ZN trap: mpt_entries nums = %d", nsb->mpt_entries);
 	/* 为MPT cache分配内存空间，为了读取和写回的方便，分配整数page大小的MPT cache */
 	nsbi->mpt = f2fs_kvzalloc(sbi, ((nsb->mpt_entries * sizeof(unsigned int) - 1) / PAGE_SIZE + 1) * PAGE_SIZE,
 							  GFP_KERNEL);

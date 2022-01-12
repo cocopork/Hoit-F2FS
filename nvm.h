@@ -167,6 +167,12 @@ struct nvm_sb_info {
 
 	///MPT表中下标是segment相对main区域的偏移量【SSD表项在NVM表项后面，是NVM表项+在SSD中偏移量】，
 	/// 值记录的是映射的segment在所在设备中，相对于MAIN区域首部的segment偏移量
+	/* 
+		ZN：注意，当本结构体的byte_private字段值不为NULL时，表示该nvm可按字节访问，并且使用
+		dax进行访问。所以nvm_sb_info即使是内存结构，对下列字段指针的数据进行更新时会直接更新
+		设备数据，无需刷回：
+			unsigned int *mpt
+	 */
 	unsigned int *mpt;//MPT区域在内存中的Cache,挂载时设置，checkpoint时同步到硬盘
 
 	//MPT表脏页位图：每一个位代表一个MPT page是否为脏，总位数也就是MPT page的数目。映射项被修改后将该项所在页标记为脏，用于回写

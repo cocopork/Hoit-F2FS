@@ -104,6 +104,10 @@ extern char *fault_name[FAULT_MAX];
 #define F2FS_MOUNT_QUOTA		0x00400000
 #define F2FS_MOUNT_INLINE_XATTR_SIZE	0x00800000
 #define F2FS_MOUNT_RESERVE_ROOT		0x01000000
+/* ZN begin */
+#define F2FS_MOUNT_BLK_NVM		0x02000000
+#define F2FS_MOUNT_BYTE_NVM		0x04000000
+/* ZN end */
 
 #define F2FS_OPTION(sbi)	((sbi)->mount_opt)
 #define clear_opt(sbi, option)	(F2FS_OPTION(sbi).opt &= ~F2FS_MOUNT_##option)

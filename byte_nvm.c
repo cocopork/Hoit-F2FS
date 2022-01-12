@@ -7,19 +7,33 @@
 #include "byte_nvm.h"
 #include "f2fs.h"
 #include "segment.h"
-//依据byte nsb设置nsbi的相关字段
-//与块设备相比添加DAX信息
-unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *nsb) {
+
+/* 
+	一些疑问：
+	1.如果直接把nvm_super_block指向dax映射内存，并且修改数据也是直接修改，由于是用
+	DRAM模拟NVM，这么做就不能体现写延迟差异了。
+
+	针对设计中问题的解决方案：
+	1.挂载就不考虑写延迟差了，之后做文件IO时先设计驱动模拟写延迟差。之后再改也行。
+	也可以在iomap_begin中添加固定延迟。
+ */
+
+/* 
+	初始化DAX设备，并设置byte_nsb在dax中的映射地址。
+	对于可字节访问的nvm，采用dax直接访问内存地址方式
+	来访问设备。于是byte_nsb指向内存的一个映射地址，
+	对byte nvm 超级块的更新就是对该内存地址的数据进
+	行修改。
+ */
+int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_nsb) {
 	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
-	int i = 0;
-	int j = 0;
-	int ret = 0;
+	struct dax_device *dax_dev;
+	int ret;
 	long dax_blk_nums = 0;
 	void *virt_addr = NULL;
 	pfn_t __pfn_t;
-	struct dax_device *dax_dev;
-	
-	byte_nsbi->nsb = nsb;
+
+	*byte_nsb = NULL;
 	/* ZN：获取DAX设备信息 */
 	ret = bdev_dax_supported(byte_nsbi->nbdev, PAGE_SIZE);
 	if (!ret) {
@@ -34,8 +48,10 @@ unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_bl
 	}
 	/* 分配并填写byte nvm私有数据 */
 	byte_nsbi->byte_private = kzalloc(sizeof(struct byte_private), GFP_KERNEL);
-	if(!byte_nsbi->byte_private)
+	if(!byte_nsbi->byte_private){
 		return -ENOMEM;
+	}
+		
 	byte_nsbi->byte_private->dax_dev = dax_dev;
 	/* 获取dax映射虚拟地址 */
 	dax_blk_nums = dax_direct_access(byte_nsbi->byte_private->dax_dev, 0, LONG_MAX/PAGE_SIZE, 
@@ -55,17 +71,28 @@ unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_bl
 		nvm_debug(NVM_ERR, "ioremap failed\n");
 		return -EINVAL;
 	}
+	*byte_nsb = (struct nvm_super_block*)virt_addr;
+	return 0;
+}
 
+//依据byte nsb设置nsbi的相关字段
+//与块设备相比添加DAX信息
+int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte_nsb) {
+	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
+	int i = 0;
+	int j = 0;
+	int ret = 0;
+	byte_nsbi->nsb = byte_nsb;
 
 	/* ZN:内存中保存各种区域的位图，version_map和dirty_map应该是论文MPT里的后面两位标志 */
 	/* 1、为MPT版本位图申请空间,单位：字节 */
-	byte_nsbi->mpt_ver_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(nsb->mpt_ver_map_bits), GFP_KERNEL);
+	byte_nsbi->mpt_ver_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(byte_nsb->mpt_ver_map_bits), GFP_KERNEL);
 	/* 2、为main区域segment位图申请空间 */
-	byte_nsbi->segment_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(nsb->main_segment_nums), GFP_KERNEL);
-	byte_nsbi->ckpt_segment_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(nsb->main_segment_nums), GFP_KERNEL);
+	byte_nsbi->segment_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(byte_nsb->main_segment_nums), GFP_KERNEL);
+	byte_nsbi->ckpt_segment_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(byte_nsb->main_segment_nums), GFP_KERNEL);
 	/* 3、为MPT表脏页位图申请空间 */
 	/* MPT脏页位图大小 和 MPT版本位图大小 相同 */
-	byte_nsbi->mpt_dirty_map_bits = nsb->mpt_ver_map_bits;
+	byte_nsbi->mpt_dirty_map_bits = byte_nsb->mpt_ver_map_bits;
 	byte_nsbi->mpt_dirty_map = f2fs_kvzalloc(sbi, f2fs_bitmap_size(byte_nsbi->mpt_dirty_map_bits), GFP_KERNEL);
 
 	if (!(byte_nsbi->mpt_ver_map && byte_nsbi->segment_map && byte_nsbi->mpt_dirty_map)) {
@@ -80,8 +107,8 @@ unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_bl
 	spin_lock_init(&byte_nsbi->lfu_half_lock);
 	spin_lock_init(&byte_nsbi->aqusz_lock);
 
-	printk(KERN_INFO"ZN trap: mpt_entries size = %d", nsb->mpt_entries);
-	printk(KERN_INFO"ZN trap: mpt size = %d ",((nsb->mpt_entries * sizeof(unsigned int) - 1) / PAGE_SIZE + 1) * PAGE_SIZE);
+	printk(KERN_INFO"ZN trap: byte mpt_entries nmus = %d", byte_nsb->mpt_entries);
+	
 	/* 不分配mpt cache ，mpt地址直接指向dax映射区域 */
 	byte_nsbi->mpt = (unsigned int)byte_nsbi->byte_private->virt_addr 
 										+ byte_nsbi->nsb->mpt_blkaddr * PAGE_SIZE / sizeof(unsigned int);
@@ -117,7 +144,7 @@ unsigned int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_bl
 }
 /**
  * 将mpt cache拷贝回byte nvm mapping区域
- * TODO：真的要按页刷回吗，直接在nvm中更细更好一些，但是dax如何确保数据刷回到nvm中呢
+ * TODO：真的要按页刷回吗，直接在nvm中更新更好一些，但是dax如何确保数据刷回到nvm中呢
  * 暂时保留这个函数
  * @param sbi
  */
@@ -158,4 +185,20 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all){
 
 	}
 
+}
+
+void print_byte_nvm_mount_parameter(struct f2fs_sb_info *sbi){
+	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
+	struct nvm_super_block *byte_nsb = byte_nsbi->nsb;
+	printk(KERN_INFO"ZN trap: =================================");
+	printk(KERN_INFO"ZN trap:      byte nvm mount parameter    ");
+	printk(KERN_INFO"ZN trap: mpt_blkaddr 		%d",byte_nsb->mpt_blkaddr);
+	printk(KERN_INFO"ZN trap: ra_blkaddr 		%d",byte_nsb->ra_blkaddr);
+	printk(KERN_INFO"ZN trap: main_blkaddr		%d",byte_nsb->main_blkaddr);
+	printk(KERN_INFO"ZN trap: ra_blk_nums		%d",byte_nsb->ra_blk_nums);
+	printk(KERN_INFO"ZN trap: main_first_segno	%d",byte_nsb->main_first_segno);
+	printk(KERN_INFO"ZN trap: main_segment_nums	%d",byte_nsb->main_segment_nums);
+	printk(KERN_INFO"ZN trap: mpt_ver_map_bits	%d",byte_nsb->mpt_ver_map_bits);
+	printk(KERN_INFO"ZN trap: mpt_entries		%d",byte_nsb->mpt_entries);
+	printk(KERN_INFO"ZN trap: =================================");
 }

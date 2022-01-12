@@ -379,9 +379,15 @@ static int parse_options(struct super_block *sb, char *options)
 #ifdef CONFIG_QUOTA
 	int ret;
 #endif
+	/* ZN begin */
 	bool ignore_nvmpath=false;  //是否忽略nvm挂载选项
-	bool nvm_ready=false;		//块设备nvm准备完毕
-	bool need_nvm=false;		//规定挂载字节设备nvm需要同时挂载块设备nvm
+	bool ignore_byte_nvmpath = false;
+	clear_opt(sbi, BLK_NVM);	//清除block nvm标志
+	clear_opt(sbi, BYTE_NVM);	//清除byte nvm标志
+	//bool nvm_ready=false;		//块设备nvm准备完毕
+	bool need_nvm=false;		//规定挂载字节设备nvm需要同时挂载块设备nvm	
+	/* ZN end */
+
 	/*
 		解析挂载选项之前，首先判断fsb中是否已经设置ndev_path
 	*/
@@ -389,10 +395,21 @@ static int parse_options(struct super_block *sb, char *options)
 	if(sbi->raw_super->ndev_path[NVM_PATH_IDX][0]) {
 		//非第一次挂载，忽略nvm挂载选项
 		ignore_nvmpath = true;
-		nvm_ready = true;
-		nvm_debug(NVM_INFO,"ignore nvmpath");
+		//nvm_ready = true;
+		set_opt(sbi, BLK_NVM);
+		nvm_debug(NVM_INFO,"ignore block nvm path");
 	}
 	/* end */
+
+	/* ZN begin */
+	if(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX][0]) {
+		//byte nvm非第一次挂载，忽略byte nvm挂载选项
+		ignore_byte_nvmpath = true;
+		set_opt(sbi, BYTE_NVM);
+		need_nvm = true;
+		nvm_debug(NVM_INFO,"ignore byte nvm path");
+	}
+	/* ZN end */
 
 	if (!options)
 		return 0;
@@ -432,7 +449,8 @@ static int parse_options(struct super_block *sb, char *options)
 				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
 				strcpy(sbi->raw_super->ndev_path[NVM_PATH_IDX], name);
 				sbi->nsbi->nvm_flag |= NVM_FIRST_MOUNR;
-				nvm_ready = true;
+				set_opt(sbi, BLK_NVM);
+				//nvm_ready = true;
 				
 			}
 			//非第一次挂载直接忽略该挂载选项
@@ -441,7 +459,9 @@ static int parse_options(struct super_block *sb, char *options)
 
 		/* ZN begin */
 		case Opt_byte_nvm_path:
-			if(!ignore_nvmpath || nvm_ready) {//第一次挂载，
+			if(!ignore_byte_nvmpath) {
+				// 本项目暂时只支持同时挂载两种nvm。
+				// 如果有挂载byte nvm的需求，则挂载参数中必须指明block nvm的设备地址路径
 				name = match_strdup(&args[0]); //获得挂载路径
 				if (!name)
 					return -ENOMEM;
@@ -450,6 +470,7 @@ static int parse_options(struct super_block *sb, char *options)
 				/* 设置NVM设备路径,并设置nsbi->nvm_flag标志位 */
 				strcpy(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], name);
 				printk(KERN_INFO"ZN trap: option ndev_path[BYTE_NVM_PATH_IDX]: %s",name);
+				set_opt(sbi, BYTE_NVM);
 				need_nvm = true;
 			}
 			break;
@@ -881,7 +902,7 @@ static int parse_options(struct super_block *sb, char *options)
 	}
 	/* ZN begin */
 	// 字节nvm准备好，而块nvm未准备好
-	if (need_nvm && !nvm_ready)
+	if (need_nvm && !test_opt(sbi, BLK_NVM))
 		return -EINVAL;
 	/* ZN end */
 	/* Not pass down write hints if the number of active logs is lesser
@@ -2778,7 +2799,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	struct nvm_sb_info *byte_nsbi;
 	/* 增加nvm设备的block_device */
 	struct block_device *byte_nbdev;
-	bool meta_page_in_SSD = false;//SSD中的数据是否已经读入sbi地址空间
+	bool meta_page_in_SSD = false;//是否已经读入SSD数据
 	/* ZN: end */
 
 	int err;
@@ -3068,11 +3089,15 @@ try_onemore:
 		f2fs_commit_super(sbi, false);
 		
 		///第一次挂载，挂载nvm完成再读取cp
-        err = f2fs_get_valid_checkpoint(sbi);
-        if (err) {
-            f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-            goto free_meta_inode;
-        }
+		// ZN:如果挂载了byte nvm，延迟到挂载完byte nvm 再读取cp
+		if(!test_opt(sbi, BYTE_NVM)){
+			err = f2fs_get_valid_checkpoint(sbi);
+			if (err) {
+				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+				goto free_meta_inode;
+			}
+		}
+
 	}
 	else {
 		
@@ -3098,7 +3123,7 @@ try_onemore:
 	/* 先获取块设备信息，用DAX访问pmem0也要暂时被视为块设备 */
 	byte_nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], mode, NULL);
 	if (IS_ERR(nbdev))
-		goto free_io_dummy;
+		goto free_meta_inode;
 	
 	byte_nsbi->nbdev = byte_nbdev;
 	byte_nsbi->cur_alloc_nvm_segoff = 0;
@@ -3107,9 +3132,15 @@ try_onemore:
 	if (byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
 	{
 		nvm_debug(NVM_INFO,"byte nvm first mount!");
-		byte_nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
-		if(!byte_nsb)
-			return -ENOMEM;
+		//2022年1月7日 ZN 先准备dax并设置byte_nsb，再填写byte_nsb的信息
+		//byte_nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
+		err = init_byte_nvm_dax(sbi, &byte_nsb);
+		if(err || !byte_nsb) {
+			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
+			goto free_meta_inode;
+		}
+		sbi->byte_nsbi->nsb = byte_nsb;
+
 		/* 初始化nvm_super_block的字段 */
 		memcpy(byte_nsb->uuid, raw_super->uuid, sizeof(raw_super->uuid));
 		byte_nsb->mpt_blkaddr = raw_super->main_blkaddr;
@@ -3149,14 +3180,35 @@ try_onemore:
 		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
 		nvm_assert(!res);
 
-		read_meta_page_from_SSD(sbi, true); //从SSD读全部META区域
-		//TODO：刷回MPT和byte_nsb，开始需要使用dax API
+		if(!meta_page_in_SSD){
+			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
+			meta_page_in_SSD = true;
+		}
 		
+        /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */
+		f2fs_commit_super(sbi, false);
+
+		///前面如果没有读取cp信息，这里就需要读取
+		if(test_opt(sbi, BYTE_NVM)){
+			err = f2fs_get_valid_checkpoint(sbi);
+			if (err) {
+				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+				goto free_meta_inode;
+			}
+		}
 
 	}
-
-	
-
+	// 暂时不考虑重复挂载，这里就简单将sbi->byte_nsbi->nsb指向dax地址
+	else {
+		//通过dax读取byte nvm数据 
+		err = init_byte_nvm_dax(sbi, &byte_nsb);
+		if(err || !byte_nsb) {
+			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
+			goto free_meta_inode;
+		}
+		sbi->byte_nsbi->nsb = byte_nsb;
+	}
+	print_byte_nvm_mount_parameter(sbi);
 	/* ZN end */
 
 	/* Initialize device list */
