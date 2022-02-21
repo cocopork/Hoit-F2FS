@@ -185,6 +185,7 @@ int f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages,
 		if (!f2fs_is_valid_meta_blkaddr(sbi, blkno, type))
 			goto out;
 
+		/* ZN：根据预读类型获取相应区域的初始地址 */
 		switch (type) {
 		case META_NAT:
 			if (unlikely(blkno >=
@@ -209,11 +210,12 @@ int f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages,
 			BUG();
 		}
 
+		/* 读取meta page，加入到meta mapping中 */
 		page = f2fs_grab_cache_page(META_MAPPING(sbi),
 						fio.new_blkaddr, false);
 		if (!page)
 			continue;
-		if (PageUptodate(page)) {
+		if (PageUptodate(page)) {	/* ZN：如果已经是最新的，就跳过下面提交bio的操作 */
 			f2fs_put_page(page, 1);
 			continue;
 		}

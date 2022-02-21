@@ -318,7 +318,7 @@ static void __submit_merged_bio(struct f2fs_bio_info *io) {
 		trace_f2fs_prepare_read_bio(io->sbi->sb, fio->type, io->bio);
 	else
 		trace_f2fs_prepare_write_bio(io->sbi->sb, fio->type, io->bio);
-	printk(KERN_INFO"ZN trap: fio->type",fio->type);
+	// printk(KERN_INFO"ZN trap: fio->type",fio->type);
 	__submit_bio(io->sbi, io->bio, fio->type);
 	io->bio = NULL;
 }

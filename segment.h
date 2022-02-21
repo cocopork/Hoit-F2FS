@@ -414,7 +414,11 @@ static inline void __set_free(struct f2fs_sb_info *sbi, unsigned int segno)
 	spin_lock(&free_i->segmap_lock);
 	clear_bit(segno, free_i->free_segmap);
 	free_i->free_segments++;
-
+	/* 
+		ZN：看下一个dirty segment 的位置，如果下一个dirty segment 不在本
+		segment，则把对应的section也置为free。当然只针对
+		1 segment ≠ 1 section 的条件。
+	 */
 	next = find_next_bit(free_i->free_segmap,
 			start_segno + sbi->segs_per_sec, start_segno);
 	if (next >= start_segno + sbi->segs_per_sec) {

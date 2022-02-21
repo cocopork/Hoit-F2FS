@@ -754,9 +754,10 @@ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
 
 	/* need not be added */
+	/* 若不是六种类型的curseg之一，则返回 */
 	if (IS_CURSEG(sbi, segno))
 		return;
-
+	/* 设置总dirty位图为脏，同时增加计数 */
 	if (!test_and_set_bit(segno, dirty_i->dirty_segmap[dirty_type]))
 		dirty_i->nr_dirty[dirty_type]++;
 
@@ -768,6 +769,7 @@ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
 			f2fs_bug_on(sbi, 1);
 			return;
 		}
+		/* 设置对应数据温度类型的dirty位图为脏，同时增加相应计数 */
 		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[t]))
 			dirty_i->nr_dirty[t]++;
 	}
@@ -3053,17 +3055,19 @@ static void read_compacted_summaries(struct f2fs_sb_info *sbi)
 	struct page *page;
 	block_t start;
 	int i, j, offset;
-
+	//ZN：计算data summary的起始地址(以块为单位)，就是f2fs_checkpoint的尾巴
 	start = start_sum_block(sbi);
 
 	page = f2fs_get_meta_page(sbi, start++);
 	kaddr = (unsigned char *)page_address(page);
 
 	/* Step 1: restore nat cache */
+	/* ZN：compated 模式下，data summary第一个部分就是 nat journal */
 	seg_i = CURSEG_I(sbi, CURSEG_HOT_DATA);
 	memcpy(seg_i->journal, kaddr, SUM_JOURNAL_SIZE);
 
 	/* Step 2: restore sit cache */
+	/* ZN：第二个位置是sit journal，保存在code data curseg中 */
 	seg_i = CURSEG_I(sbi, CURSEG_COLD_DATA);
 	memcpy(seg_i->journal, kaddr + SUM_JOURNAL_SIZE, SUM_JOURNAL_SIZE);
 	offset = 2 * SUM_JOURNAL_SIZE;
@@ -3077,18 +3081,27 @@ static void read_compacted_summaries(struct f2fs_sb_info *sbi)
 		segno = le32_to_cpu(ckpt->cur_data_segno[i]);
 		blk_off = le16_to_cpu(ckpt->cur_data_blkoff[i]);
 		seg_i->next_segno = segno;
+		/* 
+			ZN：重置curseg，将next_segno赋予segno，修改curseg的footer，
+			并设置curseg的类型以及对应的sit entry类型
+		*/
 		reset_curseg(sbi, i, 0);
 		seg_i->alloc_type = ckpt->alloc_type[i];
 		seg_i->next_blkoff = blk_off;
-
+		/* ZN：SSR与LFS的区别暂时不清楚 */
 		if (seg_i->alloc_type == SSR)
 			blk_off = sbi->blocks_per_seg;
 
 		for (j = 0; j < blk_off; j++) {
 			struct f2fs_summary *s;
+			/* ZN：从data summary部分开始读取 summary entry */
 			s = (struct f2fs_summary *)(kaddr + offset);
 			seg_i->sum_blk->entries[j] = *s;
 			offset += SUMMARY_SIZE;
+			/* 
+				ZN：如果下一条summary entry未超出一个block的范围，则不用读取下一块，
+				这里要对照看compacted mode 的布局。
+			 */
 			if (offset + SUMMARY_SIZE <= PAGE_SIZE -
 						SUM_FOOTER_SIZE)
 				continue;
@@ -3119,9 +3132,9 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 		segno = le32_to_cpu(ckpt->cur_data_segno[type]);
 		blk_off = le16_to_cpu(ckpt->cur_data_blkoff[type -
 							CURSEG_HOT_DATA]);
-		if (__exist_node_summaries(sbi))
+		if (__exist_node_summaries(sbi))// 如果没有宕机的情况下，从checkpoint中恢复
 			blk_addr = sum_blk_addr(sbi, NR_CURSEG_TYPE, type);
-		else
+		else// 出现了宕机，则从SSA中恢复
 			blk_addr = sum_blk_addr(sbi, NR_CURSEG_DATA_TYPE, type);
 	} else {
 		segno = le32_to_cpu(ckpt->cur_node_segno[type -
@@ -3139,7 +3152,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 	sum = (struct f2fs_summary_block *)page_address(new);
 
 	if (IS_NODESEG(type)) {
-		if (__exist_node_summaries(sbi)) {
+		if (__exist_node_summaries(sbi)) {// 如果没有宕机的情况下，将每一个ns重新置为0
 			struct f2fs_summary *ns = &sum->entries[0];
 			int i;
 			for (i = 0; i < sbi->blocks_per_seg; i++, ns++) {
@@ -3147,7 +3160,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 				ns->ofs_in_node = 0;
 			}
 		} else {
-			f2fs_restore_node_summary(sbi, segno, sum);
+			f2fs_restore_node_summary(sbi, segno, sum);// 如果出现了宕机，则执行这个这个函数
 		}
 	}
 
@@ -3164,7 +3177,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 	memcpy(&curseg->sum_blk->footer, &sum->footer, SUM_FOOTER_SIZE);
 	curseg->next_segno = segno;
 	reset_curseg(sbi, type, 0);
-	curseg->alloc_type = ckpt->alloc_type[type];
+	curseg->alloc_type = ckpt->alloc_type[type];/* LFS或SSR */
 	curseg->next_blkoff = blk_off;
 	mutex_unlock(&curseg->curseg_mutex);
 	f2fs_put_page(new, 1);
@@ -3181,15 +3194,20 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
 	if (is_set_ckpt_flags(sbi, CP_COMPACT_SUM_FLAG)) {
 		int npages = f2fs_npages_for_summary_flush(sbi, true);
 
+		/* ZN：这部分不理解在干什么 */
 		if (npages >= 2)
 			f2fs_ra_meta_pages(sbi, start_sum_block(sbi), npages,
 							META_CP, true);
 
 		/* restore for compacted data summary */
+		/* 从compacted summary中恢复数据data summary */
 		read_compacted_summaries(sbi);
 		type = CURSEG_HOT_NODE;
 	}
 
+	/* ZN：如果没有出现宕机，则预读这几个block */
+	printk(KERN_INFO"ZN trap: sum_blk_addr(sbi, NR_CURSEG_TYPE, type) = %u",
+					sum_blk_addr(sbi, NR_CURSEG_TYPE, type));
 	if (__exist_node_summaries(sbi))
 		f2fs_ra_meta_pages(sbi, sum_blk_addr(sbi, NR_CURSEG_TYPE, type),
 					NR_CURSEG_TYPE - type, META_CP, true);
@@ -3297,7 +3315,7 @@ int f2fs_lookup_journal_in_cursum(struct f2fs_journal *journal, int type,
 {
 	int i;
 
-	if (type == NAT_JOURNAL) {
+	if (type == NAT_JOURNAL) {//nat_entry和sit_entry在journal中可能是乱序的，需要逐条匹配
 		for (i = 0; i < nats_in_cursum(journal); i++) {
 			if (le32_to_cpu(nid_in_journal(journal, i)) == val)
 				return i;
@@ -3559,20 +3577,26 @@ static int build_sit_info(struct f2fs_sb_info *sbi)
 		return -ENOMEM;
 
 	SM_I(sbi)->sit_info = sit_i;
-
+	/* 根据main area的segment的数目,给每一个segment在内存中分配一个entry结构 */
 	sit_i->sentries =
 		f2fs_kvzalloc(sbi, array_size(sizeof(struct seg_entry),
 					      MAIN_SEGS(sbi)),
 			      GFP_KERNEL);
 	if (!sit_i->sentries)
 		return -ENOMEM;
-
+    /* 这个bitmap是segment的bitmap,作用是当segment全部block都没有使用过,
+     * 这个segment就需要标记free
+     */
 	bitmap_size = f2fs_bitmap_size(MAIN_SEGS(sbi));
+    /* 这个bitmap是记录segment是否为脏的bitmap,作用是当segment分配了一个block之后,
+     * 这个segment对应的entry信息就会改变,因此将这个segment标记为脏,之后需要通过某种策略
+     * 将数据写回到SIT区域
+     */
 	sit_i->dirty_sentries_bitmap = f2fs_kvzalloc(sbi, bitmap_size,
 								GFP_KERNEL);
 	if (!sit_i->dirty_sentries_bitmap)
 		return -ENOMEM;
-
+	/* 这里给每一个内存entry的记录block状态的bitmap分配空间，SIT_VBLOCK_MAP_SIZE=64 */
 	for (start = 0; start < MAIN_SEGS(sbi); start++) {
 		sit_i->sentries[start].cur_valid_map
 			= f2fs_kzalloc(sbi, SIT_VBLOCK_MAP_SIZE, GFP_KERNEL);
@@ -3597,7 +3621,7 @@ static int build_sit_info(struct f2fs_sb_info *sbi)
 				return -ENOMEM;
 		}
 	}
-
+	/* ZN：临时位图 */
 	sit_i->tmp_map = f2fs_kzalloc(sbi, SIT_VBLOCK_MAP_SIZE, GFP_KERNEL);
 	if (!sit_i->tmp_map)
 		return -ENOMEM;
@@ -3654,18 +3678,19 @@ static int build_free_segmap(struct f2fs_sb_info *sbi)
 		return -ENOMEM;
 
 	SM_I(sbi)->free_info = free_i;
-
+	/* 根据segment的数目初始化free map的大小 */
 	bitmap_size = f2fs_bitmap_size(MAIN_SEGS(sbi));
 	free_i->free_segmap = f2fs_kvmalloc(sbi, bitmap_size, GFP_KERNEL);
 	if (!free_i->free_segmap)
 		return -ENOMEM;
-
+	/* 由于1 section = 1 segment，将sec map看作为根据segment map同等作用就好 */
 	sec_bitmap_size = f2fs_bitmap_size(MAIN_SECS(sbi));
 	free_i->free_secmap = f2fs_kvmalloc(sbi, sec_bitmap_size, GFP_KERNEL);
 	if (!free_i->free_secmap)
 		return -ENOMEM;
 
 	/* set all segments as dirty temporarily */
+	/* 在从checkpoint恢复数据之前，将所有的segment设置为dirty */
 	memset(free_i->free_segmap, 0xff, bitmap_size);
 	memset(free_i->free_secmap, 0xff, sec_bitmap_size);
 
@@ -3688,7 +3713,7 @@ static int build_curseg(struct f2fs_sb_info *sbi)
 		return -ENOMEM;
 
 	SM_I(sbi)->curseg_array = array;
-
+	/* ZN：为curseg的其他信息分配空间 */
 	for (i = 0; i < NR_CURSEG_TYPE; i++) {
 		mutex_init(&array[i].curseg_mutex);
 		array[i].sum_blk = f2fs_kzalloc(sbi, PAGE_SIZE, GFP_KERNEL);
@@ -3702,7 +3727,7 @@ static int build_curseg(struct f2fs_sb_info *sbi)
 		array[i].segno = NULL_SEGNO;
 		array[i].next_blkoff = 0;
 	}
-	return restore_curseg_summaries(sbi);
+	return restore_curseg_summaries(sbi);// 从f2fs_checkpoint恢复上一个CP点CURSEG的状态
 }
 
 static int build_sit_entries(struct f2fs_sb_info *sbi)
@@ -3717,14 +3742,14 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 	unsigned int readed, start_blk = 0;
 	int err = 0;
 	block_t total_node_blocks = 0;
-
-	do {
+	printk(KERN_INFO"ZN trap: f2fs_discard_en = %d",f2fs_discard_en(sbi));
+	do {/* ZN：以批处理的方式，预读多块sit block */
 		readed = f2fs_ra_meta_pages(sbi, start_blk, BIO_MAX_PAGES,
 							META_SIT, true);
 
-		start = start_blk * sit_i->sents_per_block;
-		end = (start_blk + readed) * sit_i->sents_per_block;
-
+		start = start_blk * sit_i->sents_per_block;/* ZN：起始sit entry index */
+		end = (start_blk + readed) * sit_i->sents_per_block;/* 预读page后结束的index */
+		/* 将所有sit entry都读取到sit_i->sentries中 */
 		for (; start < end && start < MAIN_SEGS(sbi); start++) {
 			struct f2fs_sit_block *sit_blk;
 			struct page *page;
@@ -3735,14 +3760,18 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 			sit = sit_blk->entries[SIT_ENTRY_OFFSET(sit_i, start)];
 			f2fs_put_page(page, 1);
 
+			/* ZN：检查sit entry中的vblock和边界问题 */
 			err = check_block_count(sbi, start, &sit);
 			if (err)
 				return err;
+			/* ZN：从物理sit entry获取信息 */
 			seg_info_from_raw_sit(se, &sit);
+			/* 统计node block的总数量 */
 			if (IS_NODESEG(se->type))
 				total_node_blocks += se->valid_blocks;
 
 			/* build discard map only one time */
+			/* ZN：discard map 干嘛用的？，只知道discard block是有效块以外的块 */
 			if (f2fs_discard_en(sbi)) {
 				if (is_set_ckpt_flags(sbi, CP_TRIMMED_FLAG)) {
 					memset(se->discard_map, 0xff,
@@ -3765,6 +3794,11 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 	} while (start_blk < sit_blk_cnt);
 
 	down_read(&curseg->journal_rwsem);
+	/* 
+		ZN：接着加载日志中的sit entry，由于日志中的sit entry要比
+		SIT 区域的信息更新鲜，所以要用日志中的sit entry进行覆盖，
+		并且重新修改相关信息。
+	 */
 	for (i = 0; i < sits_in_cursum(journal); i++) {
 		unsigned int old_valid_blocks;
 
@@ -3780,7 +3814,7 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 
 		se = &sit_i->sentries[start];
 		sit = sit_in_journal(journal, i);
-
+		/* ZN：old_valid_blocks用于覆盖更新total_node_blocks */
 		old_valid_blocks = se->valid_blocks;
 		if (IS_NODESEG(se->type))
 			total_node_blocks -= old_valid_blocks;
@@ -3812,7 +3846,7 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 		}
 	}
 	up_read(&curseg->journal_rwsem);
-
+	/* ZN：如果SIT中的node block总数与超级块对不上，则需要检查 */
 	if (!err && total_node_blocks != valid_node_count(sbi)) {
 		f2fs_msg(sbi->sb, KERN_ERR,
 			"SIT is corrupted node# %u vs %u",
@@ -3829,11 +3863,11 @@ static void init_free_segmap(struct f2fs_sb_info *sbi)
 	unsigned int start;
 	int type;
 
-	for (start = 0; start < MAIN_SEGS(sbi); start++) {
+	for (start = 0; start < MAIN_SEGS(sbi); start++) {// 根据segment编号遍历每一个内存entry
 		struct seg_entry *sentry = get_seg_entry(sbi, start);
-		if (!sentry->valid_blocks)
+		if (!sentry->valid_blocks)// 如果这个segment一个block都没有用过，则设置为free(置为0)
 			__set_free(sbi, start);
-		else
+		else	// 如果这个segment中有valid block，则统计数量
 			SIT_I(sbi)->written_valid_blocks +=
 						sentry->valid_blocks;
 	}
@@ -3841,6 +3875,7 @@ static void init_free_segmap(struct f2fs_sb_info *sbi)
 	/* set use the current segments */
 	for (type = CURSEG_HOT_DATA; type <= CURSEG_COLD_NODE; type++) {
 		struct curseg_info *curseg_t = CURSEG_I(sbi, type);
+		// 设置为正在使用的状态，就是free_segments数量减去当前正在使用的segment
 		__set_test_and_inuse(sbi, curseg_t->segno);
 	}
 }
@@ -3854,11 +3889,14 @@ static void init_dirty_segmap(struct f2fs_sb_info *sbi)
 
 	while (1) {
 		/* find dirty segment based on free segmap */
+		// 从free segmap 找出所有已经使用过的seg
 		segno = find_next_inuse(free_i, MAIN_SEGS(sbi), offset);
 		if (segno >= MAIN_SEGS(sbi))
 			break;
 		offset = segno + 1;
+		// 从sit entry得到了使用了多少个block
 		valid_blocks = get_valid_blocks(sbi, segno, false);
+		/* ZN：如果segment的全部block都有效，或者是空闲的，则不标记为脏？ */
 		if (valid_blocks == sbi->blocks_per_seg || !valid_blocks)
 			continue;
 		if (valid_blocks > sbi->blocks_per_seg) {

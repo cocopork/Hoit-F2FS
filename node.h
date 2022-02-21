@@ -189,7 +189,7 @@ static inline void get_nat_bitmap(struct f2fs_sb_info *sbi, void *addr)
 }
 
 static inline pgoff_t current_nat_addr(struct f2fs_sb_info *sbi, nid_t start)
-{
+{	//ZN：计算start nid所在nat block在设备上的全局偏移
 	struct f2fs_nm_info *nm_i = NM_I(sbi);
 	pgoff_t block_off;
 	pgoff_t block_addr;
@@ -199,25 +199,25 @@ static inline pgoff_t current_nat_addr(struct f2fs_sb_info *sbi, nid_t start)
 	 * OLD = (segment_off * 512) * 2 + off_in_segment
 	 * NEW = 2 * (segment_off * 512 + off_in_segment) - off_in_segment
 	 */
-	block_off = NAT_BLOCK_OFFSET(start);
+	block_off = NAT_BLOCK_OFFSET(start);//ZN：先算出逻辑块偏移
 
 	block_addr = (pgoff_t)(nm_i->nat_blkaddr +
-		(block_off << 1) -
-		(block_off & (sbi->blocks_per_seg - 1)));
+		(block_off << 1) -	//ZN：注意NAT中segment副本成对出现，偏移要乘以2
+		(block_off & (sbi->blocks_per_seg - 1)));//ZN：减去多乘的段内偏移
 
 	if (f2fs_test_bit(block_off, nm_i->nat_bitmap))
-		block_addr += sbi->blocks_per_seg;
+		block_addr += sbi->blocks_per_seg;//ZN：检查bit_map如果在副本段上，则又要加上一段的偏移
 
 	return block_addr;
 }
 
 static inline pgoff_t next_nat_addr(struct f2fs_sb_info *sbi,
 						pgoff_t block_addr)
-{
+{	//ZN:计算block_addr处的f2fs_nat_block的备份块的地址
 	struct f2fs_nm_info *nm_i = NM_I(sbi);
 
 	block_addr -= nm_i->nat_blkaddr;
-	block_addr ^= 1 << sbi->log_blocks_per_seg;
+	block_addr ^= 1 << sbi->log_blocks_per_seg;//ZN:通过异或的方式使奇/偶数段互换
 	return block_addr + nm_i->nat_blkaddr;
 }
 
