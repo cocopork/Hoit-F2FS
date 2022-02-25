@@ -1069,6 +1069,10 @@ static int block_operations(struct f2fs_sb_info *sbi)
 retry_flush_dents:
 	f2fs_lock_all(sbi);
 	/* write all the dirty dentry pages */
+	/* 
+		ZN：首先将所有dentry相关的ditry pages同步写回，直到
+		F2FS_DIRTY_DENTS的块数量为0，注意结束后并未立即解锁sbi
+	 */
 	if (get_pages(sbi, F2FS_DIRTY_DENTS)) {
 		f2fs_unlock_all(sbi);
 		err = f2fs_sync_dirty_inodes(sbi, DIR_INODE);
@@ -1083,7 +1087,7 @@ retry_flush_dents:
 	 * until finishing nat/sit flush. inode->i_blocks can be updated.
 	 */
 	down_write(&sbi->node_change);
-
+	/* 对所有的dirty inode pages进行sync写回操作 */
 	if (get_pages(sbi, F2FS_DIRTY_IMETA)) {
 		up_write(&sbi->node_change);
 		f2fs_unlock_all(sbi);
@@ -1096,7 +1100,7 @@ retry_flush_dents:
 
 retry_flush_nodes:
 	down_write(&sbi->node_write);
-
+	/* ZN：对所有的dirty node pages做sync操作，到这结束 */
 	if (get_pages(sbi, F2FS_DIRTY_NODES)) {
 		up_write(&sbi->node_write);
 		atomic_inc(&sbi->wb_sync_req[NODE]);
@@ -1412,11 +1416,17 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
     nvm_debug(NVM_DEBUG, ">>>>start f2fs_write_checkpoint");
 
 	mutex_lock(&sbi->cp_mutex);
-
+	/*
+	ZN：如果checkpoint未dirty，但是有以下三种情况之一出现时直接退出，不做任何操作。
+	1.cp_reason为cp_fastboot
+	2.cp_reason为cp_sync
+	3.cp_reason为cp_discard，但是discard blocks个数为0
+	*/
 	if (!is_sbi_flag_set(sbi, SBI_IS_DIRTY) &&
 		((cpc->reason & CP_FASTBOOT) || (cpc->reason & CP_SYNC) ||
 		((cpc->reason & CP_DISCARD) && !sbi->discard_blks)))
 		goto out;
+	/* ZN：检查checkpoint是否有错误 */
 	if (unlikely(f2fs_cp_error(sbi))) {
 		err = -EIO;
 		goto out;
@@ -1427,7 +1437,11 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	}
 
 	trace_f2fs_write_checkpoint(sbi->sb, cpc->reason, "start block_ops");
-
+	/* 
+		ZN：block_operations函数作用是将所有将所有FS操作都冻结住，执行到
+		最后，占据着两个锁, 一个是f2fs_lock_all锁，一个是node_write锁，
+		f2fs_lock_all锁就是sbi->cp_rwsem
+	 */
 	err = block_operations(sbi);
 	if (err)
 		goto out;
@@ -1437,6 +1451,17 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	f2fs_flush_merged_writes(sbi);
 
 	/* this is the case of multiple fstrims without any changes */
+	/* 
+		ZN：
+		trim是指SSD 内部删把dirty块设置成invalid，以备后续使用的过程
+		这部分判断cpc_reason是否为CP_DISCARD（是否执行trim操作），
+			如果是的话，判断是否有trim candidates，
+				1.如果没有，则unlock_operations，即把f2fs_lock_all以及node_write信号量释放，退出。
+				2.如果有trim candidates, 则判断
+					如果dirty_nat_cnt，dirty_sentries,prefree_segment都为0的话，
+						执行flush_sit_entries并释放信号量
+
+	 */
 	if (cpc->reason & CP_DISCARD) {
 		if (!f2fs_exist_trim_candidates(sbi, cpc)) {
 			unblock_operations(sbi);
@@ -1458,6 +1483,7 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	 * Increase the version number so that
 	 * SIT entries and seg summaries are written at correct place
 	 */
+	/* cp版本号加一 */
 	ckpt_ver = cur_cp_version(ckpt);
 	ckpt->checkpoint_ver = cpu_to_le64(++ckpt_ver);
 
