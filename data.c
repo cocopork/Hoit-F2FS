@@ -388,10 +388,14 @@ static void __f2fs_submit_merged_write(struct f2fs_sb_info *sbi,
 		io->fio.op = REQ_OP_WRITE;
 		io->fio.op_flags = REQ_META | REQ_PRIO | REQ_SYNC;
 		if (!test_opt(sbi, NOBARRIER))
+			/* ZN：
+			REQ_PREFLUSH：表示在本次io开始时先确保在它之前完成的io都已经写到非易失性存储里
+			REQ_FUA：表示数据安全写到非易失性存储再返回
+			 */
 			io->fio.op_flags |= REQ_PREFLUSH | REQ_FUA;
 	}
 //    nvm_debug(NVM_INFO,"__f2fs_submit_merged_write");
-	__submit_merged_bio(io);
+	__submit_merged_bio(io);// ZN：从f2fs_io_info得到bio，提交到设备
 	up_write(&io->io_rwsem);
 }
 
@@ -404,10 +408,14 @@ static void __submit_merged_write_cond(struct f2fs_sb_info *sbi,
 		return;
 
 	for (temp = HOT; temp < NR_TEMP_TYPE; temp++) {
-
+		// ZN：遍历不同的HOT/WARM/COLD类型就行回写
 		__f2fs_submit_merged_write(sbi, type, temp);
 
 		/* TODO: use HOT temp only for meta pages now. */
+		/* 
+			ZN：sbi->write_io仅缓存三个类型，长度为NR_PAGE_TYPE
+			应该是改成只缓存热数据了
+		 */
 		if (type >= META)
 			break;
 	}
@@ -469,6 +477,7 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio) {
 }
 
 void f2fs_submit_page_write(struct f2fs_io_info *fio) {
+	/* ZN：仅仅把bio缓存起来，等待写回到硬盘 */
 	struct f2fs_sb_info *sbi = fio->sbi;
 	enum page_type btype = PAGE_TYPE_OF_BIO(fio->type);
 	struct f2fs_bio_info *io = sbi->write_io[btype] + fio->temp;

@@ -3,9 +3,9 @@
 //
 #include <linux/blkdev.h>
 #include <linux/fs.h>
-#include <linux/dax.h>
 #include "byte_nvm.h"
 #include "f2fs.h"
+#include "node.h"
 #include "segment.h"
 
 /* 
@@ -47,7 +47,7 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 		return -EINVAL;
 	}
 	/* 分配并填写byte nvm私有数据 */
-	byte_nsbi->byte_private = kzalloc(sizeof(struct byte_private), GFP_KERNEL);
+	byte_nsbi->byte_private = kzalloc(sizeof(struct byte_nvm_private), GFP_KERNEL);
 	if(!byte_nsbi->byte_private){
 		return -ENOMEM;
 	}
@@ -82,6 +82,7 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 	int i = 0;
 	int j = 0;
 	int ret = 0;
+	unsigned int segment_count_main = le32_to_cpu(sbi->raw_super->segment_count_main);
 	byte_nsbi->nsb = byte_nsb;
 
 	/* ZN:内存中保存各种区域的位图，version_map和dirty_map应该是论文MPT里的后面两位标志 */
@@ -118,14 +119,14 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 	/* 4.为lfu_count cache分配内存空间，为了对NVM段进行访问计数，方便对NVM段进行垃圾回收[最后多一个空间用于记录访问总数] */
 	for (i = 0; i < LFU_LEVELS; i++) {
 		byte_nsbi->lfu_count[i] = f2fs_kvzalloc(sbi,
-										   (((sbi->raw_super->segment_count_main + 1) * sizeof(atomic_t) - 1) /
+										   (((segment_count_main + 1) * sizeof(atomic_t) - 1) /
 											PAGE_SIZE + 1) * PAGE_SIZE, GFP_KERNEL);
 		//初始化值为-1
-		for (j = 0; j < sbi->raw_super->segment_count_main; j++) {
+		for (j = 0; j < segment_count_main; j++) {
 			atomic_set(&byte_nsbi->lfu_count[i][j], -1);
 		}
 		//初始化总计数为0
-		atomic_set(&byte_nsbi->lfu_count[i][sbi->raw_super->segment_count_main], 0);
+		atomic_set(&byte_nsbi->lfu_count[i][segment_count_main], 0);
 	}
 	byte_nsbi->now_lfu_counter = 0;//初始化当前计数器为第一个计数器
 
@@ -187,8 +188,57 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all){
 
 }
 
+/* 
+ * 访问元数据区域函数
+ */
+inline struct f2fs_nat_entry * f2fs_byte_nvm_get_nat_entry(struct f2fs_sb_info *sbi, 
+                                        nid_t nid)
+{	/* ZN：原理看 current_nat_addr ()函数，另外nid是全局的node号 */
+    struct f2fs_nm_info *nm_i = NM_I(sbi);
+	pgoff_t block_off= NAT_BLOCK_OFFSET(nid);
+	pgoff_t block_addr;
+    struct f2fs_nat_block *nat_blk;
+
+	block_addr = (pgoff_t)(F2FS_BYTE_NVM_PRIVATE(sbi)->nat_blkaddr +
+		(block_off << 1) -	//ZN：注意NAT中segment副本成对出现，偏移要乘以2
+		(block_off & (sbi->blocks_per_seg - 1)));//ZN：减去多乘的段内偏移
+    
+	if (f2fs_test_bit(block_off, nm_i->nat_bitmap))
+		block_addr += sbi->blocks_per_seg;//ZN：检查bit_map如果在副本段上，则又要加上一段的偏移
+	nat_blk = (struct f2fs_nat_block *)(F2FS_BYTE_NVM_ADDR(sbi)
+									+ block_addr * F2FS_BLKSIZE);
+	return &nat_blk->entries[nid % NAT_ENTRY_PER_BLOCK];
+    
+}
+
+inline struct f2fs_sit_entry * f2fs_byte_nvm_get_sit_entry(struct f2fs_sb_info *sbi, 
+                                        unsigned int segno)
+{   /* ZN：原理看 current_sit_addr ()函数，另外start是全局的segment号 */
+    struct sit_info *sit_i = SIT_I(sbi);
+    unsigned int block_off = SIT_BLOCK_OFFSET(segno);
+    unsigned int block_addr = F2FS_BYTE_NVM_PRIVATE(sbi)->sit_blkaddr 
+                                + block_off;
+    struct f2fs_sit_block *sit_blk;
+	if (f2fs_test_bit(block_off, sit_i->sit_bitmap))
+		block_addr += sit_i->sit_blocks;   
+    sit_blk = (struct f2fs_sit_block *)(F2FS_BYTE_NVM_ADDR(sbi)
+                                    + block_addr * F2FS_BLKSIZE);
+    return &sit_blk->entries[segno % SIT_ENTRY_PER_BLOCK];
+}
+
+inline struct f2fs_summary_block * f2fs_byte_nvm_get_sum_blk(struct f2fs_sb_info *sbi, 
+										unsigned int segno)
+{
+	unsigned int block_addr = F2FS_BYTE_NVM_PRIVATE(sbi)->ssa_blkaddr + segno;
+	return (struct f2fs_summary_block *)(F2FS_BYTE_NVM_ADDR(sbi)
+									+ block_addr * F2FS_BLKSIZE);
+}
+
+/* 
+ * 测试函数
+ */
 void print_byte_nvm_mount_parameter(struct f2fs_sb_info *sbi){
-	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
+	struct nvm_sb_info *byte_nsbi = F2FS_BYTE_NSB_I(sbi);
 	struct nvm_super_block *byte_nsb = byte_nsbi->nsb;
 	printk(KERN_INFO"ZN trap: =================================");
 	printk(KERN_INFO"ZN trap:      byte nvm mount parameter    ");
@@ -201,4 +251,10 @@ void print_byte_nvm_mount_parameter(struct f2fs_sb_info *sbi){
 	printk(KERN_INFO"ZN trap: mpt_ver_map_bits	%d",byte_nsb->mpt_ver_map_bits);
 	printk(KERN_INFO"ZN trap: mpt_entries		%d",byte_nsb->mpt_entries);
 	printk(KERN_INFO"ZN trap: =================================");
+}
+
+void print_meta_parameter(struct f2fs_sb_info *sbi) {
+	printk(KERN_INFO"ZN trap: =================================");
+	printk(KERN_INFO"ZN trap:      meta area parameter    ");
+	printk(KERN_INFO"ZN trap: ",sbi->raw_super);
 }

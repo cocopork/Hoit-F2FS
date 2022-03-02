@@ -2755,7 +2755,9 @@ static int __get_nat_bitmaps(struct f2fs_sb_info *sbi)
 
 	if (!enabled_nat_bits(sbi, NULL))
 		return 0;
-	/* ZN：由于nat位图存在成对的副本，所以要乘2，为什么要再加8不清楚 */
+	/* ZN：由于nat位图存在成对的副本，所以要乘2，为什么要再加8不清楚
+		加8好像是在两个nat bitmap副本开头分别要加32位的crc校验码
+	 */
 	nm_i->nat_bits_blocks = F2FS_BLK_ALIGN((nat_bits_bytes << 1) + 8);
 	nm_i->nat_bits = f2fs_kzalloc(sbi,
 			nm_i->nat_bits_blocks << F2FS_BLKSIZE_BITS, GFP_KERNEL);

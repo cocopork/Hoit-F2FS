@@ -453,19 +453,28 @@ static inline void __set_test_and_free(struct f2fs_sb_info *sbi,
 	unsigned int ssd_main_segoff, nr_nvm_main_segs,nvm_segoff;//查找的段号在ssd和nvm MAIN区域的偏移量
 
 	spin_lock(&free_i->segmap_lock);
+	/*
+	 * free_i->free_segmap用这个bitmap表示这个segment是否是dirty
+	 * 如果这个segno对应的segment位置等于0，代表不是dirty，不作处理
+	 * 如果这个segno对应的位置等于1，表示这个segment是dirty的，那么在当前的free_segment+1，更新最新的free_segment信息
+	 * 如果原来该段是dirty的，则置为free，计数器加一
+	 * */
 	if (test_and_clear_bit(segno, free_i->free_segmap)) {
 		free_i->free_segments++;
 
 		next = find_next_bit(free_i->free_segmap,
 				start_segno + sbi->segs_per_sec, start_segno);
+		/* ZN：如果下一个free segno在下一个sec中，则把本sec也标记free */
 		if (next >= start_segno + sbi->segs_per_sec) {
 			if (test_and_clear_bit(secno, free_i->free_secmap))
 				free_i->free_sections++;
 		}
 	}
+	/* ZN：以下是学长的代码 */
 	//TODO:在这里段已经被释放标记为空闲了，如果映射表存在映射关系，映射关系取消掉
 	nr_nvm_main_segs = sbi->nsbi->nsb->main_segment_nums;
 	ssd_main_segoff = segno;
+	/* ZN：mpt有两张表，前一张是NVM->SSD，后一张是SSD->NVM，这要的是后一张 */
 	nvm_segoff = get_mpt_value(sbi->nsbi, nr_nvm_main_segs + ssd_main_segoff);
 	if(get_map_flag(sbi->nsbi,nr_nvm_main_segs + ssd_main_segoff)){
         nvm_debug(NVM_DEBUG,"ckpt unset mapping,nvm segoff:%d,ssd segoff:%d",nvm_segoff,ssd_main_segoff);

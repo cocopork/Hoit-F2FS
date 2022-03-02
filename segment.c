@@ -1644,8 +1644,13 @@ static void set_prefree_as_free_segments(struct f2fs_sb_info *sbi)
 	unsigned int segno;
 
 	mutex_lock(&dirty_i->seglist_lock);
+	/*
+	 * 遍历dirty_seglist_info->dirty_segmap[PRE]，然后执行__set_test_and_free
+	 * prefree应该是那种全是过期信息的segment，因此直接用来保存数据。这应该是在
+	 * checkpoint的时间点把prefree segment改成free了。
+	 * */
 	for_each_set_bit(segno, dirty_i->dirty_segmap[PRE], MAIN_SEGS(sbi))
-		__set_test_and_free(sbi, segno);
+		__set_test_and_free(sbi, segno);/* 根据segno更新free_segmap的可用信息 */
 	mutex_unlock(&dirty_i->seglist_lock);
 }
 
@@ -1978,6 +1983,7 @@ int f2fs_npages_for_summary_flush(struct f2fs_sb_info *sbi, bool for_ra)
 	int i, sum_in_page;
 
 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+		/* ZN：SSR分配方式下有效block可能是乱序的，干脆用normal mode，全部刷回 */
 		if (sbi->ckpt->alloc_type[i] == SSR)
 			valid_sum_count += sbi->blocks_per_seg;
 		else {
@@ -1990,12 +1996,12 @@ int f2fs_npages_for_summary_flush(struct f2fs_sb_info *sbi, bool for_ra)
 	}
 
 	sum_in_page = (PAGE_SIZE - 2 * SUM_JOURNAL_SIZE -
-			SUM_FOOTER_SIZE) / SUMMARY_SIZE;
+			SUM_FOOTER_SIZE) / SUMMARY_SIZE;/* ZN：compacted模式下有nit journal 和sit journal */
 	if (valid_sum_count <= sum_in_page)
 		return 1;
 	else if ((valid_sum_count - sum_in_page) <=
 		(PAGE_SIZE - SUM_FOOTER_SIZE) / SUMMARY_SIZE)
-		return 2;
+		return 2;/* ZN：compacted模式下附加块，全部保存summary entry，如果够用，则只用写回2块 */
 	return 3;
 }
 
@@ -3253,7 +3259,7 @@ static void write_compacted_summaries(struct f2fs_sb_info *sbi, block_t blkaddr)
 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
 		unsigned short blkoff;
 		seg_i = CURSEG_I(sbi, i);
-		if (sbi->ckpt->alloc_type[i] == SSR)
+		if (sbi->ckpt->alloc_type[i] == SSR)/* ZN：SSR是乱序分配，所以全部都要写入 */
 			blkoff = sbi->blocks_per_seg;
 		else
 			blkoff = curseg_blkoff(sbi, i);
@@ -3271,7 +3277,7 @@ static void write_compacted_summaries(struct f2fs_sb_info *sbi, block_t blkaddr)
 
 			if (written_size + SUMMARY_SIZE <= PAGE_SIZE -
 							SUM_FOOTER_SIZE)
-				continue;
+				continue;/* ZN：仍没写满就跳过换页操作 */
 
 			set_page_dirty(page);
 			f2fs_put_page(page, 1);
@@ -3463,6 +3469,8 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	/*
 	 * add and account sit entries of dirty bitmap in sit entry
 	 * set temporarily
+	 * 遍历所有dirty的segment的segno
+	 * 找到对应的sit_entry_set，然后保存到sbi->sm_info->sit_entry_set
 	 */
 	add_sits_in_set(sbi);
 
@@ -3470,6 +3478,10 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	 * if there are no enough space in journal to store dirty sit
 	 * entries, remove all entries from journal and add and account
 	 * them in sit entry set.
+	 * ZN：和nat一样，如果sit journal没有空间了，就提取journal中的sit entry
+	 * 一并加入sit entry set，最后一起写回sit page，具体就是遍历journal的sit
+	 * entry，把这些entry都变脏，然后在集合里加entry的segno。sit_set里只是记录
+	 * 了entry的segno，一个集合对应一个sit block。
 	 */
 	if (!__has_cursum_space(journal, sit_i->dirty_sentries, SIT_JOURNAL))
 		remove_sits_in_journal(sbi);
@@ -3484,7 +3496,7 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 		struct f2fs_sit_block *raw_sit = NULL;
 		unsigned int start_segno = ses->start_segno;
 		unsigned int end = min(start_segno + SIT_ENTRY_PER_BLOCK,
-						(unsigned long)MAIN_SEGS(sbi));
+						(unsigned long)MAIN_SEGS(sbi));/* 每次循环写入一个sit block */
 		unsigned int segno = start_segno;
 
 		if (to_journal &&
@@ -3494,14 +3506,17 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 		if (to_journal) {
 			down_write(&curseg->journal_rwsem);
 		} else {
-			page = get_next_sit_page(sbi, start_segno);
-			raw_sit = page_address(page);
+			page = get_next_sit_page(sbi, start_segno);/* 访问磁盘，从磁盘获取到f2fs_sit_block */
+			raw_sit = page_address(page); /* 根据segno获得f2fs_sit_block，然后下一步将数据写入这个block当中 */
 		}
 
 		/* flush dirty sit entries in region of current sit set */
+		/* ZN：遍历segno~end（一个sit block）所有dirty的seg_entry */
 		for_each_set_bit_from(segno, bitmap, end) {
 			int offset, sit_offset;
-
+			/* ZN：根据segno从SIT缓存中获取到seg_entry，这个缓存是F2FS
+				初始化的时候，将全部seg_entry读入创建的
+			 */
 			se = get_seg_entry(sbi, segno);
 #ifdef CONFIG_F2FS_CHECK_FS
 			if (memcmp(se->cur_valid_map, se->cur_valid_map_mir,
@@ -3510,6 +3525,7 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 #endif
 
 			/* add discard candidates */
+			/* F2FS的discard操作 */
 			if (!(cpc->reason & CP_DISCARD)) {
 				cpc->trim_start = segno;
 				add_discard_addrs(sbi, cpc, false);
@@ -3517,18 +3533,18 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 			if (to_journal) {
 				offset = f2fs_lookup_journal_in_cursum(journal,
-							SIT_JOURNAL, segno, 1);
+							SIT_JOURNAL, segno, 1);/* 查询或直接分配sit entry */
 				f2fs_bug_on(sbi, offset < 0);
 				segno_in_journal(journal, offset) =
 							cpu_to_le32(segno);
 				seg_info_to_raw_sit(se,
-					&sit_in_journal(journal, offset));
+					&sit_in_journal(journal, offset));// 更新journal的数据
 				check_block_count(sbi, segno,
 					&sit_in_journal(journal, offset));
 			} else {
 				sit_offset = SIT_ENTRY_OFFSET(sit_i, segno);
 				seg_info_to_raw_sit(se,
-						&raw_sit->entries[sit_offset]);
+						&raw_sit->entries[sit_offset]); // 更新f2fs_sit_block的数据
 				check_block_count(sbi, segno,
 						&raw_sit->entries[sit_offset]);
 			}
@@ -3544,7 +3560,7 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 			f2fs_put_page(page, 1);
 
 		f2fs_bug_on(sbi, ses->entry_cnt);
-		release_sit_entry_set(ses);
+		release_sit_entry_set(ses);// 从dirty map中除名
 	}
 
 	f2fs_bug_on(sbi, !list_empty(head));
@@ -3559,7 +3575,11 @@ out:
 		cpc->trim_start = trim_start;
 	}
 	up_write(&sit_i->sentry_lock);
-
+	/*
+	 * 通过CP的时机，将暂存在dirty_segmap[PRE]的dirty的segment信息，更新到free_segmap中
+	 * 而且与接下来的do_checkpoint完成的f2fs_clear_prefree_segments有关系，因为 这里处理完了
+	 * dirty prefree segments，所以在f2fs_clear_prefree_segments这个函数将它的dirty标记清除
+	 * */
 	set_prefree_as_free_segments(sbi);
 }
 

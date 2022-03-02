@@ -6,7 +6,10 @@
 
 #include <linux/fs.h>
 #include <linux/f2fs_fs.h>
-#include "f2fs.h"
+// #include "f2fs.h"
+/* ZN begin */
+#include <linux/dax.h>
+/* ZN end */
 
 //标志nsb版本：块0或块1
 #define CP_NSB_VER_FLAG    0x00001000
@@ -145,13 +148,21 @@ struct nvm_super_block {
 //    unsigned long * segment_map;  //main区域segment有效性位图
 };
 
+/* ZN begin */
 /*byte_private，byte nvm的专门信息结构体，在nvm_sb_info的基础上添加一些信息*/
-struct byte_private
+struct byte_nvm_private
 {
 	struct dax_device *dax_dev;	/* DAX 设备信息 */
-	void *virt_addr;/* DAX对应虚拟地址 */
-	
+	unsigned char *virt_addr;/* DAX对应虚拟地址，也是 block 0 的起始地址 */
+
+	/* nvm 元数据区域起始块地址 */
+	unsigned int super_blkaddr; 
+	unsigned int cp_blkaddr;		
+	unsigned int sit_blkaddr;		
+	unsigned int nat_blkaddr;		
+	unsigned int ssa_blkaddr;	
 };
+/* ZN end */
 
 ///与nvm相关的内存结构
 struct nvm_sb_info {
@@ -209,11 +220,14 @@ struct nvm_sb_info {
 	spinlock_t aqusz_lock;//更新平均队列长度加锁
 
 	/* ZN begin */
-	struct byte_private *byte_private;	//记录字节设备额外信息
+	struct byte_nvm_private *byte_private;	//记录字节设备额外信息
 	/* ZN end */
 
 };
 
+/* ZN begin */
+#include "f2fs.h"
+/* ZN end */
 
 /* 下面的堆结构，用于NVM GC，选取访问计数最少/最多的前k个段 */
 struct heap_node {

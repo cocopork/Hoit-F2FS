@@ -8,9 +8,6 @@
 #include "nvm.h"
 #include "segment.h"
 #include "f2fs.h"
-/* ZN begin */
-#include <linux/dax.h>
-/* ZN end */
 /**
  * 将mpt cache拷贝到mapping区域
  * ZN：拷贝到nsbi的地址空间，也就是高速缓存

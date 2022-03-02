@@ -333,7 +333,10 @@ long f2fs_sync_meta_pages(struct f2fs_sb_info *sbi, enum page_type type,
 	pagevec_init(&pvec);
 
 	blk_start_plug(&plug);
-
+	/* 
+		ZN：找META mapping中的脏页，当数量不为0时，则收集到page vector中，
+		并逐个写回。
+	*/
 	while ((nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
 				PAGECACHE_TAG_DIRTY))) {
 		int i;
@@ -360,10 +363,10 @@ continue_unlock:
 				goto continue_unlock;
 			}
 
-			f2fs_wait_on_page_writeback(page, META, true);
+			f2fs_wait_on_page_writeback(page, META, true);/* ZN：等待该页上一次提交写完 */
 
 			BUG_ON(PageWriteback(page));
-			if (!clear_page_dirty_for_io(page))
+			if (!clear_page_dirty_for_io(page))/* ZN：如果上一次提交bio后page还是干净的，就不用再回写 */
 				goto continue_unlock;
 
 			if (__f2fs_write_meta_page(page, &wbc, io_type)) {
@@ -379,6 +382,10 @@ continue_unlock:
 		cond_resched();
 	}
 stop:
+	/* 
+		ZN：提交所有合并写io，起始在循环中已经做过这一步了， 
+		这里应该只是如果出了问题时，再提交一次。
+	*/
 	if (nwritten)
 		f2fs_submit_merged_write(sbi, type);
 
@@ -814,11 +821,18 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	unsigned int cp_blks = 1 + __cp_payload(sbi);
 	block_t cp_blk_no;
 	int i;
-
+	/* ZN begin */
+#ifndef F2FS_BYTE_NVM_ENABLE
 	sbi->ckpt = f2fs_kzalloc(sbi, array_size(blk_size, cp_blks),
 				 GFP_KERNEL);
 	if (!sbi->ckpt)
 		return -ENOMEM;
+	/* ZN end */
+#else
+	sbi->ckpt = (struct f2fs_checkpoint *)F2FS_DAX_ADDR(sbi);
+	if (!sbi->ckpt)
+		return -ENOMEM;
+#endif
 	/*
 	 * Finding out valid cp block involves read both
 	 * sets( cp pack1 and cp pack 2)
@@ -843,7 +857,7 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	} else {
 		goto fail_no_cp;
 	}
-
+	/* ZN：这一步开始就完成checkpoint block到nvm的移植了 */
 	cp_block = (struct f2fs_checkpoint *)page_address(cur_page);
 	memcpy(sbi->ckpt, cp_block, blk_size);
 
@@ -862,7 +876,7 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	cp_blk_no = le32_to_cpu(fsb->cp_blkaddr);
 	if (cur_page == cp2)
 		cp_blk_no += 1 << le32_to_cpu(fsb->log_blocks_per_seg);
-
+	/* ZN：这一步便把checkpoint剩余部分给读入nvm */
 	for (i = 1; i < cp_blks; i++) {
 		void *sit_bitmap_ptr;
 		unsigned char *ckpt = (unsigned char *)sbi->ckpt;
@@ -1239,6 +1253,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	int err;
 
 	/* Flush all the NAT/SIT pages */
+	/* ZN：如果META区存在脏page，则等待回写 */
 	while (get_pages(sbi, F2FS_DIRTY_META)) {
 		f2fs_sync_meta_pages(sbi, META, LONG_MAX, FS_CP_META_IO);
 		if (unlikely(f2fs_cp_error(sbi)))
@@ -1249,6 +1264,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	 * modify checkpoint
 	 * version number is already updated
 	 */
+	/* ZN：记录六个curseg的segno，blk_off和分配方式 */
 	ckpt->elapsed_time = cpu_to_le64(get_mtime(sbi, true));
 	ckpt->free_segment_count = cpu_to_le32(free_segments(sbi));
 	for (i = 0; i < NR_CURSEG_NODE_TYPE; i++) {
@@ -1269,6 +1285,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	}
 
 	/* 2 cp  + n data seg summary + orphan inode blocks */
+	/* ZN：计算checkpoint各个部分需要写回的块数和起始位置 */
 	data_sum_blocks = f2fs_npages_for_summary_flush(sbi, false);
 	spin_lock_irqsave(&sbi->cp_lock, flags);
 	if (data_sum_blocks < NR_CURSEG_DATA_TYPE)
@@ -1284,7 +1301,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	if (__remain_node_summaries(cpc->reason))
 		ckpt->cp_pack_total_block_count = cpu_to_le32(F2FS_CP_PACKS+
 				cp_payload_blks + data_sum_blocks +
-				orphan_blocks + NR_CURSEG_NODE_TYPE);
+				orphan_blocks + NR_CURSEG_NODE_TYPE);/* ZN：卸载时和fastboot下还要记录node curseg */
 	else
 		ckpt->cp_pack_total_block_count = cpu_to_le32(F2FS_CP_PACKS +
 				cp_payload_blks + data_sum_blocks +
@@ -1302,6 +1319,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	/*end*/
 
 	/* update SIT/NAT bitmap */
+	/* ZN：将sm_i和nm_i中的bitmap复制到内存中的cp super block */
 	get_sit_bitmap(sbi, __bitmap_ptr(sbi, SIT_BITMAP));
 	get_nat_bitmap(sbi, __bitmap_ptr(sbi, NAT_BITMAP));
 
@@ -1319,7 +1337,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 		cp_ver |= ((__u64)crc32 << 32);
 		*(__le64 *)nm_i->nat_bits = cpu_to_le64(cp_ver);
-
+		/* ZN：blk是nat bitmap在cp super block中的位置（放置在block 的末尾） */
 		blk = start_blk + sbi->blocks_per_seg - nm_i->nat_bits_blocks;
 		for (i = 0; i < nm_i->nat_bits_blocks; i++)
 			f2fs_update_meta_page(sbi, nm_i->nat_bits +
@@ -1335,8 +1353,9 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	}
 
 	/* write out checkpoint buffer at block 0 */
+	/* ZN：写入cp super block */
 	f2fs_update_meta_page(sbi, ckpt, start_blk++);
-
+	/* 把附加块也写入（如果sit bitmap需要额外块来保存的话） */
 	for (i = 1; i < 1 + cp_payload_blks; i++)
 		f2fs_update_meta_page(sbi, (char *)ckpt + i * F2FS_BLKSIZE,
 							start_blk++);
@@ -1345,19 +1364,27 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 		write_orphan_inodes(sbi, start_blk);
 		start_blk += orphan_blocks;
 	}
-
+	/* ZN：写入data summary */
 	f2fs_write_data_summaries(sbi, start_blk);
-	start_blk += data_sum_blocks;
+	start_blk += data_sum_blocks;/* 计算下一个cp写入块号 */
 
 	/* Record write statistics in the hot node summary */
 	kbytes_written = sbi->kbytes_written;
-	if (sb->s_bdev->bd_part)
+	if (sb->s_bdev->bd_part)/* ZN：这是指向块设备一个分区的指针 */
+		/* 
+			ZN：这里记录在挂载期间块设备写入次数，下面宏的结果是块设备分区
+			总写入次数减去f2fs挂载时分区已写入次数。单位是：KB。
+		*/
 		kbytes_written += BD_PART_WRITTEN(sbi);
-
+	/* 记录在hot node的journal中 */
 	seg_i->journal->info.kbytes_written = cpu_to_le64(kbytes_written);
-
+	/* 
+	 * node summaries的写回只有在启动和关闭F2FS的时候才会执行，
+	 * 如果出现的宕机的情况下，就会失去了UMOUNT的标志，也会失去了所有的NODE SUMMARY
+	 * F2FS会进行根据上次checkpoint的情况进行恢复
+	 */
 	if (__remain_node_summaries(cpc->reason)) {
-		f2fs_write_node_summaries(sbi, start_blk);
+		f2fs_write_node_summaries(sbi, start_blk);// 将node summary以及里面的journal写入磁盘
 		start_blk += NR_CURSEG_NODE_TYPE;
 	}
 
@@ -1366,6 +1393,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	percpu_counter_set(&sbi->alloc_valid_block_count, 0);
 
 	/* Here, we have one bio having CP pack except cp pack 2 page */
+	/* ZN：除了cp 尾部的super block，其他数据都写完成了，这时开始进行落盘 */
 	f2fs_sync_meta_pages(sbi, META, LONG_MAX, FS_CP_META_IO);
 
 	/* wait for previous submitted meta pages writeback */
@@ -1375,11 +1403,16 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 		return -EIO;
 
 	/* flush all device cache */
+	/* 硬件缓存也要刷回 */
 	err = f2fs_flush_device_cache(sbi);
 	if (err)
 		return err;
 
 	/* barrier and flush checkpoint cp pack 2 page if it can */
+	/* 
+		ZN：写回第二个cp super block，这里barrier是有条件地刷回，即提交bio时
+		等待之前的刷回完成，并确认数据写入非易失性存储再返回
+	 */
 	commit_checkpoint(sbi, ckpt, start_blk);
 	wait_on_all_pages_writeback(sbi);
 

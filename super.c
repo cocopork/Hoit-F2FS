@@ -2799,7 +2799,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	struct nvm_sb_info *byte_nsbi;
 	/* 增加nvm设备的block_device */
 	struct block_device *byte_nbdev;
-	bool meta_page_in_SSD = false;//是否已经读入SSD数据
+	bool meta_page_in_mapping = false;//是否已经读入SSD数据
 	/* ZN: end */
 
 	int err;
@@ -3070,9 +3070,9 @@ try_onemore:
 		//! 2021年12月21日读到这
 		/* 初始化NVM设备布局 */
 		//ZN :主要是把SSD中的META区读入sbi的address_space中
-		if(!meta_page_in_SSD){
+		if(!meta_page_in_mapping){
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
-			meta_page_in_SSD = true;
+			meta_page_in_mapping = true;
 		}
 		
 		/*先刷回MPT，在刷回NSB*/
@@ -3139,8 +3139,9 @@ try_onemore:
 			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
 			goto free_meta_inode;
 		}
+		
 		sbi->byte_nsbi->nsb = byte_nsb;
-
+		
 		/* 初始化nvm_super_block的字段 */
 		memcpy(byte_nsb->uuid, raw_super->uuid, sizeof(raw_super->uuid));
 		byte_nsb->mpt_blkaddr = raw_super->main_blkaddr;
@@ -3180,9 +3181,9 @@ try_onemore:
 		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
 		nvm_assert(!res);
 
-		if(!meta_page_in_SSD){
+		if(!meta_page_in_mapping){
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
-			meta_page_in_SSD = true;
+			meta_page_in_mapping = true;
 		}
 		
         /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */

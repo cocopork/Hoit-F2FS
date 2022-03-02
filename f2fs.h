@@ -25,13 +25,13 @@
 #include <linux/blkdev.h>
 #include <linux/quotaops.h>
 #include <crypto/hash.h>
+/* ZN begin */
+#include <linux/dax.h>
+/* ZN end */
 
 //COMPLETED:导入头文件
 #include "nvm.h"
-/* ZN begin */
-//f2fs.h一定要导入byte_nvm.h，否则编译失败。。
-#include "byte_nvm.h"
-/* ZN end */
+
 
 #define __FS_HAS_ENCRYPTION IS_ENABLED(CONFIG_F2FS_FS_ENCRYPTION)
 #include <linux/fscrypt.h>
@@ -1470,7 +1470,9 @@ static inline struct address_space *NODE_MAPPING(struct f2fs_sb_info *sbi)
 {
 	return sbi->node_inode->i_mapping;
 }
+/* ZN begin */
 
+/* ZN end */
 static inline bool is_sbi_flag_set(struct f2fs_sb_info *sbi, unsigned int type)
 {
 	return test_bit(type, &sbi->s_flag);
@@ -3393,6 +3395,10 @@ static inline bool f2fs_force_buffered_io(struct inode *inode, int rw)
 
 //用于测试
 void get_real_page(struct f2fs_sb_info *sbi, struct page *real_page, struct block_device *bdev, block_t blkno);
-
+/* ZN begin */
+//f2fs.h一定要导入byte_nvm.h，否则编译失败。。
+#include "byte_nvm.h"
+//#define F2FS_BYTE_NVM_ENABLE
+/* ZN end */
 
 #endif
