@@ -3,20 +3,10 @@
 //
 #include <linux/blkdev.h>
 #include <linux/fs.h>
-#include "byte_nvm.h"
 #include "f2fs.h"
+#include "byte_nvm.h"
 #include "node.h"
 #include "segment.h"
-
-/* 
-	一些疑问：
-	1.如果直接把nvm_super_block指向dax映射内存，并且修改数据也是直接修改，由于是用
-	DRAM模拟NVM，这么做就不能体现写延迟差异了。
-
-	针对设计中问题的解决方案：
-	1.挂载就不考虑写延迟差了，之后做文件IO时先设计驱动模拟写延迟差。之后再改也行。
-	也可以在iomap_begin中添加固定延迟。
- */
 
 /* 
 	初始化DAX设备，并设置byte_nsb在dax中的映射地址。
@@ -25,6 +15,9 @@
 	对byte nvm 超级块的更新就是对该内存地址的数据进
 	行修改。
  */
+/**
+ * 进行dax所必要的初始化，初始化流程参考nova
+*/
 int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_nsb) {
 	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
 	struct dax_device *dax_dev;
@@ -62,9 +55,9 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 		return -EINVAL;
 	}
 
-	//ZN: 检查是否可访问块数量一致
-	printk(KERN_INFO"ZN trap: dax accessable block :%d",dax_blk_nums);
-	printk(KERN_INFO"ZN trap: device accessable block :%d",SECTOR_TO_BLOCK(byte_nsbi->nbdev->bd_part->nr_sects));
+	//ZN: 查看是否可访问块数量一致（是一致的
+	// printk(KERN_INFO"ZN trap: dax accessable block :%d",dax_blk_nums);
+	// printk(KERN_INFO"ZN trap: device accessable block :%d",SECTOR_TO_BLOCK(byte_nsbi->nbdev->bd_part->nr_sects));
 
 	byte_nsbi->byte_private->virt_addr = virt_addr;
 	if (!byte_nsbi->byte_private->virt_addr) {
@@ -75,6 +68,40 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 	return 0;
 }
 
+/**
+ * @brief 初始化 byte nvm 私有参数
+ * 
+ * @param sbi 文件系统超级快数据
+ * @return int 成功时返回0
+ */
+int init_byte_nvm_private_info(struct f2fs_sb_info *sbi)
+{
+	struct f2fs_super_block * sb = sbi->raw_super;
+	struct byte_nvm_private * byte_nsb_private = F2FS_BYTE_NVM_PRIVATE(sbi);
+	if (!sb)
+	{
+		nvm_debug(NVM_ERR, "raw super block is not ready\n");
+		return -EINVAL;
+	}
+	/**
+	 * 物理上nvm第一个segment归属于超级块，segment0从第二块开始数起
+	 * 但是block0还是从nvm超级块所在位置开始算起
+	 */
+	byte_nsb_private->super_blkaddr		= 0;
+	byte_nsb_private->segment0_blkaddr 	= 1 * sbi->blocks_per_seg;
+	byte_nsb_private->cp_blkaddr		= le32_to_cpu(sb->segment0_blkaddr);
+	byte_nsb_private->sit_blkaddr		= le32_to_cpu(sb->sit_blkaddr) 
+											- le32_to_cpu(sb->cp_blkaddr) 
+											+ byte_nsb_private->cp_blkaddr;
+	byte_nsb_private->nat_blkaddr		= le32_to_cpu(sb->nat_blkaddr) 
+											- le32_to_cpu(sb->cp_blkaddr) 
+											+ byte_nsb_private->cp_blkaddr;
+	byte_nsb_private->ssa_blkaddr		= le32_to_cpu(sb->ssa_blkaddr) 
+											- le32_to_cpu(sb->cp_blkaddr) 
+											+ byte_nsb_private->cp_blkaddr;
+	byte_nsb_private->s_flag |= BNVM_PRIVATE_READY;
+	return 0;
+}
 //依据byte nsb设置nsbi的相关字段
 //与块设备相比添加DAX信息
 int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte_nsb) {
@@ -108,7 +135,7 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 	spin_lock_init(&byte_nsbi->lfu_half_lock);
 	spin_lock_init(&byte_nsbi->aqusz_lock);
 
-	printk(KERN_INFO"ZN trap: byte mpt_entries nmus = %d", byte_nsb->mpt_entries);
+	// printk(KERN_INFO"ZN trap: byte mpt_entries nmus = %d", byte_nsb->mpt_entries);
 	
 	/* 不分配mpt cache ，mpt地址直接指向dax映射区域 */
 	byte_nsbi->mpt = (unsigned int)byte_nsbi->byte_private->virt_addr 
@@ -129,8 +156,6 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 		atomic_set(&byte_nsbi->lfu_count[i][segment_count_main], 0);
 	}
 	byte_nsbi->now_lfu_counter = 0;//初始化当前计数器为第一个计数器
-
-
 	byte_nsbi->mh = init_max_heap(sbi, NVM_TO_SSD);
 	byte_nsbi->minh = init_min_heap(sbi, SSD_TO_NVM);
 	byte_nsbi->nvm_gc_start_page = alloc_pages(GFP_KERNEL, sbi->log_blocks_per_seg);// 分配用于NVM-GC段迁移的连续物理内存页
@@ -141,7 +166,8 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 	if (!byte_nsbi->lfu_count[0] || !byte_nsbi->mpt)
 		return -ENOMEM;
 
-	return 0;
+	ret = init_byte_nvm_private_info(sbi);
+	return ret;
 }
 /**
  * 将mpt cache拷贝回byte nvm mapping区域
@@ -187,11 +213,149 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all){
 	}
 
 }
-
 /* 
- * 访问元数据区域函数
+ * build_curseg专用
  */
-inline struct f2fs_nat_entry * f2fs_byte_nvm_get_nat_entry(struct f2fs_sb_info *sbi, 
+/**
+ * 获取bnvm上的compacted_summaries，
+ * 参考 read_compacted_summaries
+*/
+//TODO：是否需要加锁？
+void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi)
+{
+	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
+	struct curseg_info *seg_i;
+	unsigned char *kaddr;
+	block_t start;
+	int i, j, offset;
+
+	start = f2fs_bnvm_get_cp_sum(sbi);
+	/* 已经读取整个cp pack到nvm中，就直接按字节访问 */
+	kaddr = F2FS_BYTE_NVM_ADDR(sbi) + start * sbi->blocksize;
+	/* 复制 nat journal */
+	seg_i = CURSEG_I(sbi, CURSEG_HOT_DATA);
+	memcpy(seg_i->journal, kaddr, SUM_JOURNAL_SIZE);
+
+	/* 复制 sit journal，和nat journal 都在一个block上 */
+	seg_i = CURSEG_I(sbi, CURSEG_COLD_DATA);
+	memcpy(seg_i->journal, kaddr + SUM_JOURNAL_SIZE, SUM_JOURNAL_SIZE);
+	offset = 2 * SUM_JOURNAL_SIZE;
+
+	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+		unsigned short blk_off;
+		unsigned int segno;
+
+		seg_i = CURSEG_I(sbi, i);
+		segno = le32_to_cpu(ckpt->cur_data_segno[i]);
+		blk_off = le16_to_cpu(ckpt->cur_data_blkoff[i]);
+		seg_i->next_segno = segno;	
+
+		reset_curseg(sbi, i, 0);
+		seg_i->alloc_type = ckpt->alloc_type[i];
+		seg_i->next_blkoff = blk_off;
+		if (seg_i->alloc_type == SSR)
+			blk_off = sbi->blocks_per_seg;
+
+		for ( j = 0; j < blk_off; j++)
+		{
+			struct f2fs_summary *s;
+			s = (struct f2fs_summary *)(kaddr + offset);
+			seg_i->sum_blk->entries[j] = *s;
+			offset += SUMMARY_SIZE;
+			if (offset + SUMMARY_SIZE <= PAGE_SIZE -
+						SUM_FOOTER_SIZE)
+				continue;
+			kaddr += sbi->blocksize;
+			offset = 0;
+		}
+	}
+}
+/**
+ * 获取bnvm上的 normal summaries
+ * 参考 read_normal_summaries
+*/
+int bnvm_read_normal_summaries(struct f2fs_sb_info *sbi, int type)
+{
+	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
+	struct f2fs_summary_block *sum;
+	struct curseg_info *curseg;
+	unsigned short blk_off;
+	unsigned int segno = 0;
+	block_t blk_addr = 0;
+	if (IS_DATASEG(type)) {
+		segno = le32_to_cpu(ckpt->cur_data_segno[type]);
+		blk_off = le16_to_cpu(ckpt->cur_data_blkoff[type -
+							CURSEG_HOT_DATA]);
+		if (__exist_node_summaries(sbi))// 如果没有宕机的情况下，从checkpoint中恢复
+			blk_addr = f2fs_bnvm_get_sum_blk_addr(sbi, NR_CURSEG_TYPE, type);
+		else// 出现了宕机，则从SSA中恢复
+			blk_addr = f2fs_bnvm_get_sum_blk_addr(sbi, NR_CURSEG_DATA_TYPE, type);
+	} else {
+		segno = le32_to_cpu(ckpt->cur_node_segno[type -
+							CURSEG_HOT_NODE]);
+		blk_off = le16_to_cpu(ckpt->cur_node_blkoff[type -
+							CURSEG_HOT_NODE]);
+		if (__exist_node_summaries(sbi))
+			blk_addr = f2fs_bnvm_get_sum_blk_addr(sbi, NR_CURSEG_NODE_TYPE,
+							type - CURSEG_HOT_NODE);
+		else
+			//TODO：2022年3月5日 SSA还没搬运上来，这里假设搬运上来了
+			/* blk_addr = 0，表示直接从ssa区域获取数据 */
+			blk_addr = 0;		
+	}
+	if (blk_addr)/* 从CP中获取 */
+		sum = (struct f2fs_summary_block *)F2FS_BYTE_NVM_BLK_TO_ADDR(sbi, blk_addr);
+	else/* 从SSA获取 */
+		sum = f2fs_bnvm_get_sum_blk(sbi, segno);
+	
+	if (IS_NODESEG(type)){
+		if (__exist_node_summaries(sbi)) {// 如果没有宕机的情况下，将每一个ns重新置为0
+			struct f2fs_summary *ns = &sum->entries[0];
+			int i;
+			for (i = 0; i < sbi->blocks_per_seg; i++, ns++) {
+				ns->version = 0;
+				ns->ofs_in_node = 0;
+			}
+		} else {
+			f2fs_restore_node_summary(sbi, segno, sum);
+		}
+	}
+	/* 剩下的步骤就是复制summary block数据到curseg */
+	/* set uncompleted segment to curseg */
+	curseg = CURSEG_I(sbi, type);
+	mutex_lock(&curseg->curseg_mutex);
+
+	/* update journal info */
+	down_write(&curseg->journal_rwsem);
+	memcpy(curseg->journal, &sum->journal, SUM_JOURNAL_SIZE);
+	up_write(&curseg->journal_rwsem);
+
+	memcpy(curseg->sum_blk->entries, sum->entries, SUM_ENTRY_SIZE);
+	memcpy(&curseg->sum_blk->footer, &sum->footer, SUM_FOOTER_SIZE);
+	curseg->next_segno = segno;
+	reset_curseg(sbi, type, 0);
+	curseg->alloc_type = ckpt->alloc_type[type];/* LFS或SSR */
+	curseg->next_blkoff = blk_off;
+	mutex_unlock(&curseg->curseg_mutex);
+
+	return 0;
+}
+
+/******************************************************************************
+ * 搬运元数据函数
+ ********************************************************************************/
+
+/******************************************************************************
+ * 访问元数据区域函数
+ ********************************************************************************/
+inline struct nvm_super_block * f2fs_bnvm_get_raw_super(struct f2fs_sb_info *sbi)
+{
+	return (struct nvm_super_block *)(F2FS_BYTE_NVM_ADDR(sbi) 
+									+ F2FS_BYTE_NVM_PRIVATE(sbi)->super_blkaddr 
+									* F2FS_BLKSIZE);
+}
+
+inline struct f2fs_nat_entry * f2fs_bnvm_get_nat_entry(struct f2fs_sb_info *sbi, 
                                         nid_t nid)
 {	/* ZN：原理看 current_nat_addr ()函数，另外nid是全局的node号 */
     struct f2fs_nm_info *nm_i = NM_I(sbi);
@@ -211,7 +375,7 @@ inline struct f2fs_nat_entry * f2fs_byte_nvm_get_nat_entry(struct f2fs_sb_info *
     
 }
 
-inline struct f2fs_sit_entry * f2fs_byte_nvm_get_sit_entry(struct f2fs_sb_info *sbi, 
+inline struct f2fs_sit_entry * f2fs_bnvm_get_sit_entry(struct f2fs_sb_info *sbi, 
                                         unsigned int segno)
 {   /* ZN：原理看 current_sit_addr ()函数，另外start是全局的segment号 */
     struct sit_info *sit_i = SIT_I(sbi);
@@ -226,7 +390,7 @@ inline struct f2fs_sit_entry * f2fs_byte_nvm_get_sit_entry(struct f2fs_sb_info *
     return &sit_blk->entries[segno % SIT_ENTRY_PER_BLOCK];
 }
 
-inline struct f2fs_summary_block * f2fs_byte_nvm_get_sum_blk(struct f2fs_sb_info *sbi, 
+inline struct f2fs_summary_block * f2fs_bnvm_get_sum_blk(struct f2fs_sb_info *sbi, 
 										unsigned int segno)
 {
 	unsigned int block_addr = F2FS_BYTE_NVM_PRIVATE(sbi)->ssa_blkaddr + segno;
@@ -253,8 +417,37 @@ void print_byte_nvm_mount_parameter(struct f2fs_sb_info *sbi){
 	printk(KERN_INFO"ZN trap: =================================");
 }
 
-void print_meta_parameter(struct f2fs_sb_info *sbi) {
+void print_raw_info(struct f2fs_sb_info *sbi) {
 	printk(KERN_INFO"ZN trap: =================================");
 	printk(KERN_INFO"ZN trap:      meta area parameter    ");
-	printk(KERN_INFO"ZN trap: ",sbi->raw_super);
+	printk(KERN_INFO"ZN trap: segment0_blkaddr		%d",sbi->raw_super->segment0_blkaddr);
+	printk(KERN_INFO"ZN trap: cp_blkaddr			%d",sbi->raw_super->cp_blkaddr);
+	printk(KERN_INFO"ZN trap: segment_count_ckpt	%d",sbi->raw_super->segment_count_ckpt);
+	printk(KERN_INFO"ZN trap: nat_blkaddr			%d",sbi->raw_super->nat_blkaddr);
+	printk(KERN_INFO"ZN trap: segment_count_nat		%d",sbi->raw_super->segment_count_nat);
+	printk(KERN_INFO"ZN trap: sit_blkaddr			%d",sbi->raw_super->sit_blkaddr);
+	printk(KERN_INFO"ZN trap: segment_count_sit		%d",sbi->raw_super->segment_count_sit);
+	printk(KERN_INFO"ZN trap: ssa_blkaddr			%d",sbi->raw_super->ssa_blkaddr);
+	printk(KERN_INFO"ZN trap: segment_count_ssa		%d",sbi->raw_super->segment_count_ssa);
+	printk(KERN_INFO"ZN trap: =================================");
+}
+
+void print_ckpt_info(struct f2fs_sb_info *sbi) {
+	struct f2fs_checkpoint *cp = F2FS_CKPT(sbi);
+	if(!sbi->ckpt){
+		printk(KERN_INFO"ZN trap: checkpoint is not ready");
+		return ;
+	}
+	printk(KERN_INFO"ZN trap: =================================");
+	printk(KERN_INFO"ZN trap:      checkpoint information    ");
+	printk(KERN_INFO"ZN trap: cp_blks						%d",1 + __cp_payload(sbi));
+	printk(KERN_INFO"ZN trap: cp_pay_load 					%d",__cp_payload(sbi));/* ZN：cp super block的附加块数量 */
+	printk(KERN_INFO"ZN trap: cur_cp_pack					%d",sbi->cur_cp_pack);
+	printk(KERN_INFO"ZN trap: user_block_count				%d",cp->user_block_count);
+	printk(KERN_INFO"ZN trap: valid_block_count				%d",cp->valid_block_count);
+	printk(KERN_INFO"ZN trap: free_segment_count			%d",cp->free_segment_count);
+	printk(KERN_INFO"ZN trap: cp_pack_total_block_count		%d",cp->cp_pack_total_block_count);
+	printk(KERN_INFO"ZN trap: cp_pack_start_sum				%d",cp->cp_pack_start_sum);
+	printk(KERN_INFO"ZN trap: alloc_type[CURSEG_HOT_DATA]	%d",cp->alloc_type[CURSEG_HOT_DATA]);
+	printk(KERN_INFO"ZN trap: =================================");		
 }

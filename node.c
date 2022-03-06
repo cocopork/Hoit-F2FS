@@ -2664,7 +2664,6 @@ static void __flush_nat_entry_set(struct f2fs_sb_info *sbi,
 		nat_reset_flag(ne);
 		//ZN：把当前nat entry从set中删去，清楚IS_DIRTY标记，并添加到空闲nat entry列表上
 		__clear_nat_cache_dirty(NM_I(sbi), set, ne);
-		//TOOPT：2022年2月8日
 		if (nat_get_blkaddr(ne) == NULL_ADDR) {//ZN：如果对应nid已经是被无效化了，则释放
 			add_free_nid(sbi, nid, false, true);
 		} else {

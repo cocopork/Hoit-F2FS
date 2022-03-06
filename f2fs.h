@@ -27,6 +27,7 @@
 #include <crypto/hash.h>
 /* ZN begin */
 #include <linux/dax.h>
+#define F2FS_BYTE_NVM_ENABLE
 /* ZN end */
 
 //COMPLETED:导入头文件

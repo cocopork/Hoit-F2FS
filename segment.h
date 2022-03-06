@@ -890,3 +890,8 @@ wake_up:
 	dcc->discard_wake = 1;
 	wake_up_interruptible_all(&dcc->discard_wait_queue);
 }
+
+/* ZN begin */
+/* 暴露一些函数给byte_nvm.c */
+static void reset_curseg(struct f2fs_sb_info *sbi, int type, int modified);
+/* ZN end */

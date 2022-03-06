@@ -25,6 +25,7 @@
 
 //COMPLETED：设置头文件
 #include "nvm.h"
+#include "byte_nvm.h"
 static struct kmem_cache *ino_entry_slab;
 struct kmem_cache *f2fs_inode_entry_slab;
 
@@ -821,18 +822,21 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	unsigned int cp_blks = 1 + __cp_payload(sbi);
 	block_t cp_blk_no;
 	int i;
-	/* ZN begin */
+/* ZN begin */
 #ifndef F2FS_BYTE_NVM_ENABLE
 	sbi->ckpt = f2fs_kzalloc(sbi, array_size(blk_size, cp_blks),
 				 GFP_KERNEL);
 	if (!sbi->ckpt)
 		return -ENOMEM;
-	/* ZN end */
 #else
-	sbi->ckpt = (struct f2fs_checkpoint *)F2FS_DAX_ADDR(sbi);
+	/* ZN：暂时指向cp pack 1的位置，在下方获得有效checkpoint之后，
+		再cp pack2是否有效，如果是则改为指向cp pack 2 
+	*/
+	sbi->ckpt = f2fs_bnvm_get_cp(sbi, 1);
 	if (!sbi->ckpt)
-		return -ENOMEM;
+		return -ENOMEM;	
 #endif
+/* ZN end */
 	/*
 	 * Finding out valid cp block involves read both
 	 * sets( cp pack1 and cp pack 2)
@@ -857,7 +861,17 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	} else {
 		goto fail_no_cp;
 	}
-	/* ZN：这一步开始就完成checkpoint block到nvm的移植了 */
+	
+	/* ZN begin */
+#ifdef F2FS_BYTE_NVM_ENABLE
+	/* 根据有效cp进行重定向 */
+	if (cur_page == cp1)
+		sbi->ckpt = f2fs_bnvm_get_cp(sbi,1);
+	else
+		sbi->ckpt = f2fs_bnvm_get_cp(sbi,2);
+#endif	
+	/* ZN end */
+	/* ZN：这一步开始就完成checkpoint block到内存的移植了 */
 	cp_block = (struct f2fs_checkpoint *)page_address(cur_page);
 	memcpy(sbi->ckpt, cp_block, blk_size);
 
@@ -876,7 +890,9 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 	cp_blk_no = le32_to_cpu(fsb->cp_blkaddr);
 	if (cur_page == cp2)
 		cp_blk_no += 1 << le32_to_cpu(fsb->log_blocks_per_seg);
-	/* ZN：这一步便把checkpoint剩余部分给读入nvm */
+	
+#ifndef F2FS_BYTE_NVM_ENABLE
+	/* ZN：这一步便把checkpoint剩余部分给读入内存 */
 	for (i = 1; i < cp_blks; i++) {
 		void *sit_bitmap_ptr;
 		unsigned char *ckpt = (unsigned char *)sbi->ckpt;
@@ -886,6 +902,20 @@ int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
 		memcpy(ckpt + i * blk_size, sit_bitmap_ptr, blk_size);
 		f2fs_put_page(cur_page, 1);
 	}
+#else
+	/* 如果使用的是bnvm，则把cp pack的orphen node ，summary等都读取上来 */
+	cp_blks = sbi->ckpt->cp_pack_total_block_count - 1;
+	for ( i = 1; i < cp_blks; i++)
+	{
+		void * cp_blk_ptr;
+		unsigned char *ckpt = (unsigned char *)sbi->ckpt;
+		cur_page = f2fs_get_meta_page(sbi, cp_blk_no + i);
+		cp_blk_ptr = page_address(cur_page);
+		memcpy(ckpt + i * blk_size, cp_blk_ptr, blk_size);
+		f2fs_put_page(cur_page, 1);
+	}
+#endif
+
 done:
 	f2fs_put_page(cp1, 1);
 	f2fs_put_page(cp2, 1);
@@ -895,7 +925,9 @@ free_fail_no_cp:
 	f2fs_put_page(cp1, 1);
 	f2fs_put_page(cp2, 1);
 fail_no_cp:
+#ifndef F2FS_BYTE_NVM_ENABLE
 	kfree(sbi->ckpt);
+#endif
 	return -EINVAL;
 }
 
@@ -1327,7 +1359,8 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	*((__le32 *)((unsigned char *)ckpt +
 				le32_to_cpu(ckpt->checksum_offset)))
 				= cpu_to_le32(crc32);
-
+	//TODO：落盘部分需要改造
+#ifndef F2FS_BYTE_NVM_ENABLE
 	start_blk = __start_cp_next_addr(sbi);
 
 	/* write nat bits */
@@ -1355,7 +1388,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	/* write out checkpoint buffer at block 0 */
 	/* ZN：写入cp super block */
 	f2fs_update_meta_page(sbi, ckpt, start_blk++);
-	/* 把附加块也写入（如果sit bitmap需要额外块来保存的话） */
+	/* 把附加块也写入（如果sit version bitmap需要额外块来保存的话） */
 	for (i = 1; i < 1 + cp_payload_blks; i++)
 		f2fs_update_meta_page(sbi, (char *)ckpt + i * F2FS_BLKSIZE,
 							start_blk++);
@@ -1415,6 +1448,9 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	 */
 	commit_checkpoint(sbi, ckpt, start_blk);
 	wait_on_all_pages_writeback(sbi);
+#else 
+
+#endif
 
 	f2fs_release_ino_entry(sbi, false);
 

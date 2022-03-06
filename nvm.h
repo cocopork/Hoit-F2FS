@@ -153,14 +153,17 @@ struct nvm_super_block {
 struct byte_nvm_private
 {
 	struct dax_device *dax_dev;	/* DAX 设备信息 */
+	unsigned int s_flag;/* flags for byte nvm private */
 	unsigned char *virt_addr;/* DAX对应虚拟地址，也是 block 0 的起始地址 */
 
 	/* nvm 元数据区域起始块地址 */
-	unsigned int super_blkaddr; 
+	unsigned int super_blkaddr;
+	unsigned int segment0_blkaddr;	/* 注意，segment0是从checkpoint区域开始算起的*/ 
 	unsigned int cp_blkaddr;		
 	unsigned int sit_blkaddr;		
 	unsigned int nat_blkaddr;		
 	unsigned int ssa_blkaddr;	
+
 };
 /* ZN end */
 

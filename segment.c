@@ -3140,7 +3140,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 							CURSEG_HOT_DATA]);
 		if (__exist_node_summaries(sbi))// 如果没有宕机的情况下，从checkpoint中恢复
 			blk_addr = sum_blk_addr(sbi, NR_CURSEG_TYPE, type);
-		else// 出现了宕机，则从SSA中恢复
+		else// 出现了宕机，则checkpoint没有node summary，只有data summary
 			blk_addr = sum_blk_addr(sbi, NR_CURSEG_DATA_TYPE, type);
 	} else {
 		segno = le32_to_cpu(ckpt->cur_node_segno[type -
@@ -3150,7 +3150,7 @@ static int read_normal_summaries(struct f2fs_sb_info *sbi, int type)
 		if (__exist_node_summaries(sbi))
 			blk_addr = sum_blk_addr(sbi, NR_CURSEG_NODE_TYPE,
 							type - CURSEG_HOT_NODE);
-		else
+		else// 出现宕机时，node只能从SSA区域获取summary block
 			blk_addr = GET_SUM_BLOCK(sbi, segno);
 	}
 
@@ -3196,7 +3196,7 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
 	struct f2fs_journal *nat_j = CURSEG_I(sbi, CURSEG_HOT_DATA)->journal;
 	int type = CURSEG_HOT_DATA;
 	int err;
-
+#ifndef F2FS_BYTE_NVM_ENABLE
 	if (is_set_ckpt_flags(sbi, CP_COMPACT_SUM_FLAG)) {
 		int npages = f2fs_npages_for_summary_flush(sbi, true);
 
@@ -3212,8 +3212,8 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
 	}
 
 	/* ZN：如果没有出现宕机，则预读这几个block */
-	printk(KERN_INFO"ZN trap: sum_blk_addr(sbi, NR_CURSEG_TYPE, type) = %u",
-					sum_blk_addr(sbi, NR_CURSEG_TYPE, type));
+	// printk(KERN_INFO"ZN trap: sum_blk_addr(sbi, NR_CURSEG_TYPE, type) = %u",
+	// 				sum_blk_addr(sbi, NR_CURSEG_TYPE, type));
 	if (__exist_node_summaries(sbi))
 		f2fs_ra_meta_pages(sbi, sum_blk_addr(sbi, NR_CURSEG_TYPE, type),
 					NR_CURSEG_TYPE - type, META_CP, true);
@@ -3223,6 +3223,18 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
 		if (err)
 			return err;
 	}
+#else
+	if (is_set_ckpt_flags(sbi, CP_COMPACT_SUM_FLAG)) {
+		bnvm_read_compacted_summaries(sbi);
+		type = CURSEG_HOT_NODE;
+	}
+
+	for (; type <= CURSEG_COLD_NODE; type++) {
+		err = bnvm_read_normal_summaries(sbi, type);
+		if (err)
+			return err;
+	}
+#endif
 
 	/* sanity check for summary blocks */
 	if (nats_in_cursum(nat_j) > NAT_JOURNAL_ENTRIES ||

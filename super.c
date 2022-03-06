@@ -2799,7 +2799,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	struct nvm_sb_info *byte_nsbi;
 	/* 增加nvm设备的block_device */
 	struct block_device *byte_nbdev;
-	bool meta_page_in_mapping = false;//是否已经读入SSD数据
+	bool meta_page_read_flag	= false;
 	/* ZN: end */
 
 	int err;
@@ -3070,9 +3070,10 @@ try_onemore:
 		//! 2021年12月21日读到这
 		/* 初始化NVM设备布局 */
 		//ZN :主要是把SSD中的META区读入sbi的address_space中
-		if(!meta_page_in_mapping){
+		if (!meta_page_read_flag)
+		{
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
-			meta_page_in_mapping = true;
+			meta_page_read_flag	= true;
 		}
 		
 		/*先刷回MPT，在刷回NSB*/
@@ -3090,13 +3091,13 @@ try_onemore:
 		
 		///第一次挂载，挂载nvm完成再读取cp
 		// ZN:如果挂载了byte nvm，延迟到挂载完byte nvm 再读取cp
-		if(!test_opt(sbi, BYTE_NVM)){
-			err = f2fs_get_valid_checkpoint(sbi);
-			if (err) {
-				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-				goto free_meta_inode;
-			}
+		//! ZN：checkpoint改为重复读取
+		err = f2fs_get_valid_checkpoint(sbi);
+		if (err) {
+			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+			goto free_meta_inode;
 		}
+
 
 	}
 	else {
@@ -3180,27 +3181,27 @@ try_onemore:
 		/* 初始化nvm_sb_info的字段 */
 		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
 		nvm_assert(!res);
-
-		if(!meta_page_in_mapping){
+		if (!meta_page_read_flag)
+		{
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
-			meta_page_in_mapping = true;
+			meta_page_read_flag = true;
 		}
 		
         /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */
 		f2fs_commit_super(sbi, false);
 
 		///前面如果没有读取cp信息，这里就需要读取
-		if(test_opt(sbi, BYTE_NVM)){
-			err = f2fs_get_valid_checkpoint(sbi);
-			if (err) {
-				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-				goto free_meta_inode;
-			}
-		}
 
+		err = f2fs_get_valid_checkpoint(sbi);
+		if (err) {
+			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+			goto free_meta_inode;
+		}
 	}
 	// 暂时不考虑重复挂载，这里就简单将sbi->byte_nsbi->nsb指向dax地址
 	else {
+		//ZN：非第一次挂载，先读取checkpoint
+		err = f2fs_get_valid_checkpoint(sbi);
 		//通过dax读取byte nvm数据 
 		err = init_byte_nvm_dax(sbi, &byte_nsb);
 		if(err || !byte_nsb) {
@@ -3209,7 +3210,10 @@ try_onemore:
 		}
 		sbi->byte_nsbi->nsb = byte_nsb;
 	}
-	print_byte_nvm_mount_parameter(sbi);
+	/* 查看参数 */
+	// print_byte_nvm_mount_parameter(sbi);
+	// print_raw_info(sbi);
+	// print_ckpt_info(sbi);
 	/* ZN end */
 
 	/* Initialize device list */
