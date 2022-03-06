@@ -811,7 +811,11 @@ invalid_cp1:
 	return NULL;
 }
 
-int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
+/* ZN begin */
+/**
+ * 使用bnvm第一次挂载,由于无需cp上的nvm sb信息，checkpoint可以直接读取到bnvm上
+*/
+int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi)
 {
 	struct f2fs_checkpoint *cp_block;
 	struct f2fs_super_block *fsb = sbi->raw_super;
@@ -928,6 +932,91 @@ fail_no_cp:
 #ifndef F2FS_BYTE_NVM_ENABLE
 	kfree(sbi->ckpt);
 #endif
+	return -EINVAL;
+}
+/* ZN end */
+
+int f2fs_get_valid_checkpoint(struct f2fs_sb_info *sbi)
+{
+	struct f2fs_checkpoint *cp_block;
+	struct f2fs_super_block *fsb = sbi->raw_super;
+	struct page *cp1, *cp2, *cur_page;
+	unsigned long blk_size = sbi->blocksize;
+	unsigned long long cp1_version = 0, cp2_version = 0;
+	unsigned long long cp_start_blk_no;
+	unsigned int cp_blks = 1 + __cp_payload(sbi);
+	block_t cp_blk_no;
+	int i;
+	sbi->ckpt = f2fs_kzalloc(sbi, array_size(blk_size, cp_blks),
+				 GFP_KERNEL);
+	if (!sbi->ckpt)
+		return -ENOMEM;
+	/*
+	 * Finding out valid cp block involves read both
+	 * sets( cp pack1 and cp pack 2)
+	 */
+	cp_start_blk_no = le32_to_cpu(fsb->cp_blkaddr);
+	cp1 = validate_checkpoint(sbi, cp_start_blk_no, &cp1_version);
+
+	/* The second checkpoint pack should start at the next segment */
+	cp_start_blk_no += ((unsigned long long)1) <<
+				le32_to_cpu(fsb->log_blocks_per_seg);
+	cp2 = validate_checkpoint(sbi, cp_start_blk_no, &cp2_version);
+
+	if (cp1 && cp2) {
+		if (ver_after(cp2_version, cp1_version))
+			cur_page = cp2;
+		else
+			cur_page = cp1;
+	} else if (cp1) {
+		cur_page = cp1;
+	} else if (cp2) {
+		cur_page = cp2;
+	} else {
+		goto fail_no_cp;
+	}
+	
+	/* ZN：这一步开始就完成checkpoint block到内存的移植了 */
+	cp_block = (struct f2fs_checkpoint *)page_address(cur_page);
+	memcpy(sbi->ckpt, cp_block, blk_size);
+
+	/* Sanity checking of checkpoint */
+	if (f2fs_sanity_check_ckpt(sbi))
+		goto free_fail_no_cp;
+
+	if (cur_page == cp1)
+		sbi->cur_cp_pack = 1;
+	else
+		sbi->cur_cp_pack = 2;
+
+	if (cp_blks <= 1)
+		goto done;
+
+	cp_blk_no = le32_to_cpu(fsb->cp_blkaddr);
+	if (cur_page == cp2)
+		cp_blk_no += 1 << le32_to_cpu(fsb->log_blocks_per_seg);
+	
+	/* ZN：这一步便把checkpoint剩余部分给读入内存 */
+	for (i = 1; i < cp_blks; i++) {
+		void *sit_bitmap_ptr;
+		unsigned char *ckpt = (unsigned char *)sbi->ckpt;
+
+		cur_page = f2fs_get_meta_page(sbi, cp_blk_no + i);
+		sit_bitmap_ptr = page_address(cur_page);
+		memcpy(ckpt + i * blk_size, sit_bitmap_ptr, blk_size);
+		f2fs_put_page(cur_page, 1);
+	}
+
+done:
+	f2fs_put_page(cp1, 1);
+	f2fs_put_page(cp2, 1);
+	return 0;
+
+free_fail_no_cp:
+	f2fs_put_page(cp1, 1);
+	f2fs_put_page(cp2, 1);
+fail_no_cp:
+	kfree(sbi->ckpt);
 	return -EINVAL;
 }
 

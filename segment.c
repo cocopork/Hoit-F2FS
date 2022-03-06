@@ -2156,8 +2156,8 @@ got_it:
 	*newseg = segno;
 	spin_unlock(&free_i->segmap_lock);
 }
-
-static void reset_curseg(struct f2fs_sb_info *sbi, int type, int modified)
+//! 取消static
+void reset_curseg(struct f2fs_sb_info *sbi, int type, int modified)
 {
 	struct curseg_info *curseg = CURSEG_I(sbi, type);
 	struct summary_footer *sum_footer;

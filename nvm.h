@@ -23,9 +23,17 @@
 /* ZN end */
 /*NVM标志位*/
 //记录nsb是否变脏并回写
-#define NVM_NSB_DIRTY 0x01
+#define NVM_NSB_DIRTY 			0x01
 //是否第一次挂载，读META转移到NVM设备
-#define NVM_FIRST_MOUNR 0x02
+#define NVM_FIRST_MOUNR 		0x02
+
+/* ZN begin */
+//是否为可字节寻址的NVM
+#define NVM_BYTE_ACCESSIBLE 	0x04
+//DAX访问区域是否准备完毕
+#define NVM_BYTE_PRIVATE_READY	0x08
+/* ZN end */
+
 //第一个超级块块号
 #define NVM_SUPER_BLOCK 0
 
@@ -223,6 +231,7 @@ struct nvm_sb_info {
 	spinlock_t aqusz_lock;//更新平均队列长度加锁
 
 	/* ZN begin */
+
 	struct byte_nvm_private *byte_private;	//记录字节设备额外信息
 	/* ZN end */
 

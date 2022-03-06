@@ -15,6 +15,9 @@
 	对byte nvm 超级块的更新就是对该内存地址的数据进
 	行修改。
  */
+/******************************************************************************
+ * super
+ ********************************************************************************/
 /**
  * 进行dax所必要的初始化，初始化流程参考nova
 */
@@ -64,7 +67,19 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 		nvm_debug(NVM_ERR, "ioremap failed\n");
 		return -EINVAL;
 	}
+	/* 如果是第一次挂载， byte_nsb 保存在第一块 */
 	*byte_nsb = (struct nvm_super_block*)virt_addr;
+
+	if(!(sbi->byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)){
+		/* 如果不是第一次，则需要到checkpoint里查看最新的 byte_nsb应该在哪一块 */
+		if(!sbi->ckpt) {
+			nvm_debug(NVM_ERR, "cp not ready\n");
+			return -EINVAL;
+		}
+		/* version为1则在第1块 */
+		if (sbi->ckpt->ckpt_flags & CP_NSB_VER_FLAG)
+			*byte_nsb += 1;
+	}
 	return 0;
 }
 
@@ -99,7 +114,8 @@ int init_byte_nvm_private_info(struct f2fs_sb_info *sbi)
 	byte_nsb_private->ssa_blkaddr		= le32_to_cpu(sb->ssa_blkaddr) 
 											- le32_to_cpu(sb->cp_blkaddr) 
 											+ byte_nsb_private->cp_blkaddr;
-	byte_nsb_private->s_flag |= BNVM_PRIVATE_READY;
+	// byte_nsb_private->s_flag |= BNVM_PRIVATE_READY;
+	sbi->byte_nsbi->nvm_flag |= NVM_BYTE_PRIVATE_READY;
 	return 0;
 }
 //依据byte nsb设置nsbi的相关字段
@@ -213,9 +229,32 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all){
 	}
 
 }
-/* 
- * build_curseg专用
- */
+/******************************************************************************
+ * checkpoint
+ ********************************************************************************/
+/**
+ * 将内存中的sbi->ckpt转移至bnvm上，调用之前确保ckpt已经在内存中
+*/
+int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
+{
+	unsigned int cp_blks = 1 + __cp_payload(sbi);
+	struct nvm_sb_info *byte_nsbi  = F2FS_BYTE_NSB_I(sbi);
+	struct f2fs_checkpoint *pre_ckpt = sbi->ckpt;
+	unsigned char src,dst;
+	if (!pre_ckpt)
+		return -EINVAL;
+	sbi->ckpt = f2fs_bnvm_get_cp(sbi, sbi->cur_cp_pack);
+	dst = (unsigned char *)sbi->ckpt;
+	src = (unsigned char *)pre_ckpt;
+	printk(KERN_INFO"ZN trap: 3");
+	memcpy(dst, src, cp_blks * sbi->blocksize);
+	kfree(src);
+	return 0;
+}
+
+/******************************************************************************
+ * build_curseg()
+ ********************************************************************************/
 /**
  * 获取bnvm上的compacted_summaries，
  * 参考 read_compacted_summaries

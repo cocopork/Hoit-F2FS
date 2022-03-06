@@ -14,8 +14,11 @@
 int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_nsb);
 int init_byte_nvm_private_info(struct f2fs_sb_info *sbi);
 int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte_nsb);
-int f2fs_bnvm_get_checkpoint(struct f2fs_sb_info *sbi);
 void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all);
+
+int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi);
+int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi);
+
 void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi);
 int bnvm_read_normal_summaries(struct f2fs_sb_info *sbi, int type);
 /* 访问元数据区域函数 */
@@ -55,6 +58,8 @@ static inline unsigned char *F2FS_BYTE_NVM_BLK_TO_ADDR(struct f2fs_sb_info *sbi,
 
 static inline struct f2fs_checkpoint * f2fs_bnvm_get_cp(struct f2fs_sb_info *sbi, unsigned int cp_pack_no)
 {
+    if(!(sbi->byte_nsbi->nvm_flag & NVM_BYTE_PRIVATE_READY))
+        return NULL;
     if (cp_pack_no == 1)
         /* 获取cp pack的块首 */
         return (struct f2fs_checkpoint *)(F2FS_BYTE_NVM_ADDR(sbi)

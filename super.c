@@ -430,8 +430,8 @@ static int parse_options(struct super_block *sb, char *options)
 		*/
 		token = match_token(p, f2fs_tokens, args);
 		// printk(KERN_ERR"ZN trap: token=%d p=%s",token,p);
-		// printk(KERN_ERR"ZN trap: token=%d p=%s",token,p);
-		f2fs_msg(sb, KERN_INFO, "ZN trap: token=%d p=%s",token,p);
+		// printk(KERN_INFO"ZN trap: token=%d p=%s",token,p);
+		// f2fs_msg(sb, KERN_ERR, "ZN trap: token=%d p=%s",token,p);
 		/*
 			对于有挂载值的挂载参数，需要获得挂载选项对应的挂载值；
 			没有挂载值，则不需要获得挂载值
@@ -860,6 +860,7 @@ static int parse_options(struct super_block *sb, char *options)
 			f2fs_msg(sb, KERN_ERR,
 				"Unrecognized mount option \"%s\" or missing value",
 				p);
+			printk(KERN_INFO"ZN trap: token=%d p=%s",token,p);
 			return -EINVAL;
 		}
 	}
@@ -2827,7 +2828,7 @@ try_onemore:
 	nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
 	if(!nsbi)
 		return -ENOMEM;
-
+	byte_nsbi->nvm_flag &= ~NVM_BYTE_ACCESSIBLE;
 	sbi->nsbi = nsbi;
 	/* end */
 
@@ -2835,6 +2836,9 @@ try_onemore:
 	byte_nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
 	if(!byte_nsbi)
 		return -ENOMEM;
+	//注意此时dax尚未准备好
+	byte_nsbi->nvm_flag |= NVM_BYTE_ACCESSIBLE;
+	byte_nsbi->nvm_flag	&= ~NVM_BYTE_PRIVATE_READY;
 	sbi->byte_nsbi = byte_nsbi;
 	/* ZN: end */
 
@@ -3004,6 +3008,118 @@ try_onemore:
 		goto free_io_dummy;
 	}
 
+	/* ZN begin */
+	/* 先获取块设备信息，用DAX访问pmem0也要暂时被视为块设备 */
+	byte_nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], mode, NULL);
+	if (IS_ERR(nbdev))
+		goto free_meta_inode;
+	
+	byte_nsbi->nbdev = byte_nbdev;
+	byte_nsbi->cur_alloc_nvm_segoff = 0;
+
+	/* 判断是否为第一次挂载 */
+	if (byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
+	{
+		nvm_debug(NVM_INFO,"byte nvm first mount!");
+		//2022年1月7日 ZN 先准备dax并设置byte_nsb，再填写byte_nsb的信息
+		//byte_nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
+		err = init_byte_nvm_dax(sbi, &byte_nsb);
+		if(err || !byte_nsb) {
+			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
+			goto free_meta_inode;
+		}
+		
+		sbi->byte_nsbi->nsb = byte_nsb;
+		
+		/* 初始化nvm_super_block的字段 */
+		memcpy(byte_nsb->uuid, raw_super->uuid, sizeof(raw_super->uuid));
+		byte_nsb->mpt_blkaddr = raw_super->main_blkaddr;
+
+		/* 重复计算各个单位的大小关系，力求与学长的项目低耦合 */
+		// Byte NVM的总容量(扇区为单位)
+		nsize = byte_nbdev->bd_part->nr_sects;
+
+		blockcount = SECTOR_TO_BLOCK(nsize);
+		
+		segmentsize = sbi->blocks_per_seg; //一个segment含有几个块；以block(4KB)为单位
+
+		/* NVM main区域和mpt区域起始地址相差两个segment */
+		//根据MAIN区域剩余空间百分比划分 Record Area区域
+		
+		byte_nsb->ra_blkaddr = byte_nsb->mpt_blkaddr + MAIN_OFFSET * segmentsize;
+		byte_nsb->ra_blk_nums = blockcount * RA_PRECENTAGE/100;
+		byte_nsb->main_blkaddr = byte_nsb->ra_blkaddr + byte_nsb->ra_blk_nums;
+		byte_nsb->main_first_segno = (raw_super->main_blkaddr - raw_super->segment0_blkaddr)/segmentsize + MAIN_OFFSET;
+		byte_nsb->main_segment_nums = (blockcount - byte_nsb->main_blkaddr) / segmentsize; //NVM main区域segment总数,不足一个seg忽略掉
+		byte_nsb->main_segment_free_nums = byte_nsb->main_segment_nums;
+		
+		/* 计算MPT表大小(即SSD和NVM main区域segment总数) */
+		mpt_ssd_count = raw_super->segment_count_main;
+		mpt_nvm_count = byte_nsb->main_segment_nums;
+		byte_nsb->mpt_entries = mpt_nvm_count + mpt_ssd_count;
+
+		/* 计算lfu计数数组占用的物理块地址，共两份 */
+		byte_nsb->lfu_blkaddr0 = 2;
+		byte_nsb->lfu_blkaddr1 = 2 + (segmentsize - 2) / 2;
+
+		/* MPT版本位图的大小，，MPT也有自己的位图，一位对应一个全是mpt_entry的块*/
+		byte_nsb->mpt_ver_map_bits = (byte_nsb->mpt_entries* sizeof(unsigned int) - 1)/PAGE_SIZE + 1;
+
+		byte_nsb->map[0] = '0';	//用于记录位图的起始位置	
+		
+		/* 初始化nvm_sb_info的字段 */
+		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
+		nvm_assert(!res);
+		if (!meta_page_read_flag)
+		{
+			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
+			meta_page_read_flag = true;
+		}
+		printk(KERN_INFO"ZN trap: 0");
+        /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */
+		f2fs_commit_super(sbi, false);
+
+		///前面如果没有读取cp信息，这里就需要读取
+		printk(KERN_INFO"ZN trap: 1");
+		err = f2fs_get_valid_checkpoint(sbi);
+		if (err) {
+			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+			goto free_meta_inode;
+		}
+		printk(KERN_INFO"ZN trap: 2");
+		err = f2fs_move_cp_to_bnvm(sbi);
+		printk(KERN_INFO"ZN trap: 4");
+		if (err) {
+			printk(KERN_ERR"ZN trap: Failed to move cp to bnvm ");
+			goto free_meta_inode;
+		}		
+	}
+	// 暂时不考虑重复挂载，这里就简单将sbi->byte_nsbi->nsb指向dax地址
+	else {
+		//ZN：非第一次挂载，先读取checkpoint
+		err = f2fs_get_valid_checkpoint(sbi);
+		if (err) {
+			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+			goto free_meta_inode;
+		}
+
+		//通过dax读取byte nvm数据 
+		err = init_byte_nvm_dax(sbi, &byte_nsb);
+		if(err || !byte_nsb) {
+			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
+			goto free_meta_inode;
+		}
+		res = init_byte_nvm_sb_info(sbi, byte_nsb);
+		nvm_assert(!res);
+		f2fs_move_cp_to_bnvm(sbi);
+		sbi->byte_nsbi->nsb = byte_nsb;
+	}
+	/* 查看参数 */
+	// print_byte_nvm_mount_parameter(sbi);
+	// print_raw_info(sbi);
+	// print_ckpt_info(sbi);
+	/* ZN end */
+
 	/* start */
 	/* 读取NVM设备信息，关联到nsbi*/
 
@@ -3091,7 +3207,7 @@ try_onemore:
 		
 		///第一次挂载，挂载nvm完成再读取cp
 		// ZN:如果挂载了byte nvm，延迟到挂载完byte nvm 再读取cp
-		//! ZN：checkpoint改为重复读取
+		
 		err = f2fs_get_valid_checkpoint(sbi);
 		if (err) {
 			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
@@ -3120,101 +3236,7 @@ try_onemore:
 	
 	/* end */
 
-	/* ZN begin */
-	/* 先获取块设备信息，用DAX访问pmem0也要暂时被视为块设备 */
-	byte_nbdev = blkdev_get_by_path(sbi->raw_super->ndev_path[BYTE_NVM_PATH_IDX], mode, NULL);
-	if (IS_ERR(nbdev))
-		goto free_meta_inode;
-	
-	byte_nsbi->nbdev = byte_nbdev;
-	byte_nsbi->cur_alloc_nvm_segoff = 0;
 
-	/* 判断是否为第一次挂载 */
-	if (byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
-	{
-		nvm_debug(NVM_INFO,"byte nvm first mount!");
-		//2022年1月7日 ZN 先准备dax并设置byte_nsb，再填写byte_nsb的信息
-		//byte_nsb = kzalloc(sizeof(struct nvm_super_block), GFP_KERNEL);
-		err = init_byte_nvm_dax(sbi, &byte_nsb);
-		if(err || !byte_nsb) {
-			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
-			goto free_meta_inode;
-		}
-		
-		sbi->byte_nsbi->nsb = byte_nsb;
-		
-		/* 初始化nvm_super_block的字段 */
-		memcpy(byte_nsb->uuid, raw_super->uuid, sizeof(raw_super->uuid));
-		byte_nsb->mpt_blkaddr = raw_super->main_blkaddr;
-
-		/* 重复计算各个单位的大小关系，力求与学长的项目低耦合 */
-		// Byte NVM的总容量(扇区为单位)
-		nsize = byte_nbdev->bd_part->nr_sects;
-
-		blockcount = SECTOR_TO_BLOCK(nsize);
-		
-		segmentsize = sbi->blocks_per_seg; //一个segment含有几个块；以block(4KB)为单位
-
-		/* NVM main区域和mpt区域起始地址相差两个segment */
-		//根据MAIN区域剩余空间百分比划分 Record Area区域
-		byte_nsb->ra_blkaddr = byte_nsb->mpt_blkaddr + MAIN_OFFSET * segmentsize;
-		byte_nsb->ra_blk_nums = blockcount * RA_PRECENTAGE/100;
-		byte_nsb->main_blkaddr = byte_nsb->ra_blkaddr + byte_nsb->ra_blk_nums;
-		byte_nsb->main_first_segno = (raw_super->main_blkaddr - raw_super->segment0_blkaddr)/segmentsize + MAIN_OFFSET;
-		byte_nsb->main_segment_nums = (blockcount - byte_nsb->main_blkaddr) / segmentsize; //NVM main区域segment总数,不足一个seg忽略掉
-		byte_nsb->main_segment_free_nums = byte_nsb->main_segment_nums;
-
-		/* 计算MPT表大小(即SSD和NVM main区域segment总数) */
-		mpt_ssd_count = raw_super->segment_count_main;
-		mpt_nvm_count = byte_nsb->main_segment_nums;
-		byte_nsb->mpt_entries = mpt_nvm_count + mpt_ssd_count;
-
-		/* 计算lfu计数数组占用的物理块地址，共两份 */
-		byte_nsb->lfu_blkaddr0 = 2;
-		byte_nsb->lfu_blkaddr1 = 2 + (segmentsize - 2) / 2;
-
-		/* MPT版本位图的大小，，MPT也有自己的位图，一位对应一个全是mpt_entry的块*/
-		byte_nsb->mpt_ver_map_bits = (nsb->mpt_entries* sizeof(unsigned int) - 1)/PAGE_SIZE + 1;
-
-		byte_nsb->map[0] = '0';	//用于记录位图的起始位置	
-		
-		/* 初始化nvm_sb_info的字段 */
-		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
-		nvm_assert(!res);
-		if (!meta_page_read_flag)
-		{
-			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
-			meta_page_read_flag = true;
-		}
-		
-        /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */
-		f2fs_commit_super(sbi, false);
-
-		///前面如果没有读取cp信息，这里就需要读取
-
-		err = f2fs_get_valid_checkpoint(sbi);
-		if (err) {
-			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-			goto free_meta_inode;
-		}
-	}
-	// 暂时不考虑重复挂载，这里就简单将sbi->byte_nsbi->nsb指向dax地址
-	else {
-		//ZN：非第一次挂载，先读取checkpoint
-		err = f2fs_get_valid_checkpoint(sbi);
-		//通过dax读取byte nvm数据 
-		err = init_byte_nvm_dax(sbi, &byte_nsb);
-		if(err || !byte_nsb) {
-			nvm_debug(NVM_ERR, "byte nvm preparing dax failed!");
-			goto free_meta_inode;
-		}
-		sbi->byte_nsbi->nsb = byte_nsb;
-	}
-	/* 查看参数 */
-	// print_byte_nvm_mount_parameter(sbi);
-	// print_raw_info(sbi);
-	// print_ckpt_info(sbi);
-	/* ZN end */
 
 	/* Initialize device list */
 	err = f2fs_scan_devices(sbi);
