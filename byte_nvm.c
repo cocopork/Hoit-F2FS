@@ -240,15 +240,20 @@ int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
 	unsigned int cp_blks = 1 + __cp_payload(sbi);
 	struct nvm_sb_info *byte_nsbi  = F2FS_BYTE_NSB_I(sbi);
 	struct f2fs_checkpoint *pre_ckpt = sbi->ckpt;
-	unsigned char src,dst;
+	struct f2fs_checkpoint *new_ckpt;
+	unsigned char *src, *dst;
 	if (!pre_ckpt)
 		return -EINVAL;
-	sbi->ckpt = f2fs_bnvm_get_cp(sbi, sbi->cur_cp_pack);
-	dst = (unsigned char *)sbi->ckpt;
+	if (sbi->byte_nsbi->nvm_flag & NVM_BYTE_PRIVATE_READY)
+		new_ckpt = f2fs_bnvm_get_cp(sbi, sbi->cur_cp_pack);
+	else
+		return -EINVAL;
+	dst = (unsigned char *)new_ckpt;
 	src = (unsigned char *)pre_ckpt;
-	printk(KERN_INFO"ZN trap: 3");
+	printk(KERN_INFO"ZN trap: dst %p src %p",new_ckpt, pre_ckpt);
 	memcpy(dst, src, cp_blks * sbi->blocksize);
 	kfree(src);
+	sbi->ckpt = new_ckpt;
 	return 0;
 }
 

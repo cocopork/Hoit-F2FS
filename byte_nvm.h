@@ -58,8 +58,11 @@ static inline unsigned char *F2FS_BYTE_NVM_BLK_TO_ADDR(struct f2fs_sb_info *sbi,
 
 static inline struct f2fs_checkpoint * f2fs_bnvm_get_cp(struct f2fs_sb_info *sbi, unsigned int cp_pack_no)
 {
-    if(!(sbi->byte_nsbi->nvm_flag & NVM_BYTE_PRIVATE_READY))
+    if(!(sbi->byte_nsbi->nvm_flag & NVM_BYTE_PRIVATE_READY)) {
+        printk(KERN_INFO"ZN trap: bnvm private is not ready");
         return NULL;
+    }
+        
     if (cp_pack_no == 1)
         /* 获取cp pack的块首 */
         return (struct f2fs_checkpoint *)(F2FS_BYTE_NVM_ADDR(sbi)

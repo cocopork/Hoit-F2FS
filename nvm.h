@@ -28,10 +28,11 @@
 #define NVM_FIRST_MOUNR 		0x02
 
 /* ZN begin */
+
 //是否为可字节寻址的NVM
-#define NVM_BYTE_ACCESSIBLE 	0x04
+#define NVM_BYTE_ACCESSIBLE 	0x08
 //DAX访问区域是否准备完毕
-#define NVM_BYTE_PRIVATE_READY	0x08
+#define NVM_BYTE_PRIVATE_READY	0x10
 /* ZN end */
 
 //第一个超级块块号

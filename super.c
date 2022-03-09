@@ -2828,7 +2828,7 @@ try_onemore:
 	nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
 	if(!nsbi)
 		return -ENOMEM;
-	byte_nsbi->nvm_flag &= ~NVM_BYTE_ACCESSIBLE;
+	byte_nsbi->nvm_flag ^= NVM_BYTE_ACCESSIBLE;
 	sbi->nsbi = nsbi;
 	/* end */
 
@@ -2838,7 +2838,7 @@ try_onemore:
 		return -ENOMEM;
 	//注意此时dax尚未准备好
 	byte_nsbi->nvm_flag |= NVM_BYTE_ACCESSIBLE;
-	byte_nsbi->nvm_flag	&= ~NVM_BYTE_PRIVATE_READY;
+	byte_nsbi->nvm_flag	^= NVM_BYTE_PRIVATE_READY;
 	sbi->byte_nsbi = byte_nsbi;
 	/* ZN: end */
 
@@ -3016,7 +3016,7 @@ try_onemore:
 	
 	byte_nsbi->nbdev = byte_nbdev;
 	byte_nsbi->cur_alloc_nvm_segoff = 0;
-
+	printk(KERN_INFO"ZN trap: byte_nsbi->nvm_flag & NVM_FIRST_MOUNR = %x ",byte_nsbi->nvm_flag);
 	/* 判断是否为第一次挂载 */
 	if (byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
 	{
@@ -3069,18 +3069,21 @@ try_onemore:
 		
 		/* 初始化nvm_sb_info的字段 */
 		res = init_byte_nvm_sb_info(sbi, byte_nsb);  //使用nsb初始化nsbi相关字段	
+
 		nvm_assert(!res);
 		if (!meta_page_read_flag)
 		{
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
+			nvm_assert(byte_nsbi->nvm_flag & NVM_FIRST_MOUNR);
+			byte_nsbi->nvm_flag ^= NVM_FIRST_MOUNR;
 			meta_page_read_flag = true;
 		}
-		printk(KERN_INFO"ZN trap: 0");
+		
         /* 写回SSD的fsb信息到SSD超级块区域，用于持久化关联NVM设备信息：ndev_path */
 		f2fs_commit_super(sbi, false);
 
 		///前面如果没有读取cp信息，这里就需要读取
-		printk(KERN_INFO"ZN trap: 1");
+
 		err = f2fs_get_valid_checkpoint(sbi);
 		if (err) {
 			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
@@ -3189,6 +3192,8 @@ try_onemore:
 		if (!meta_page_read_flag)
 		{
 			read_meta_page_from_SSD(sbi ,false); //从SSD读全部META区域
+			nvm_assert(nsbi->nvm_flag & NVM_FIRST_MOUNR);
+			nsbi->nvm_flag ^= NVM_FIRST_MOUNR;
 			meta_page_read_flag	= true;
 		}
 		
@@ -3206,24 +3211,29 @@ try_onemore:
 		f2fs_commit_super(sbi, false);
 		
 		///第一次挂载，挂载nvm完成再读取cp
-		// ZN:如果挂载了byte nvm，延迟到挂载完byte nvm 再读取cp
-		
-		err = f2fs_get_valid_checkpoint(sbi);
-		if (err) {
-			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-			goto free_meta_inode;
+		// ZN:如果cp 已经读取到byte nvm上，则无需读取cp
+		if (!sbi->ckpt)
+		{
+			err = f2fs_get_valid_checkpoint(sbi);
+			if (err) {
+				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+				goto free_meta_inode;
+			}
 		}
-
 
 	}
 	else {
 		
         ///非第一次挂载，先读取cp
-        err = f2fs_get_valid_checkpoint(sbi);
-        if (err) {
-            f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
-            goto free_meta_inode;
-        }
+		// ZN:如果cp 已经读取到byte nvm上，则无需读取cp
+		if (!sbi->ckpt)
+		{
+			err = f2fs_get_valid_checkpoint(sbi);
+			if (err) {
+				f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+				goto free_meta_inode;
+			}
+		}
 		/* 读取NVM超级块并设置nsbi */
 		nvm_err = read_nvm_super_block(sbi,&nvm_recovery);
 

@@ -536,8 +536,9 @@ int read_meta_page_from_SSD(struct f2fs_sb_info *sbi, bool is_byte_nvm) {
 		f2fs_put_page(page, 1);
 	}
 	//取消设置nsbi->nvm_flag标志位
-	nvm_assert(nsbi->nvm_flag & NVM_FIRST_MOUNR);
-	nsbi->nvm_flag ^= NVM_FIRST_MOUNR;
+	// ZN：这部分移到函数外边
+	// nvm_assert(nsbi->nvm_flag & NVM_FIRST_MOUNR);
+	// nsbi->nvm_flag ^= NVM_FIRST_MOUNR;
 	return 0;
 }
 
