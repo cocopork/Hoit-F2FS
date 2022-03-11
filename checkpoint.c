@@ -836,7 +836,7 @@ int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi)
 	/* ZN：暂时指向cp pack 1的位置，在下方获得有效checkpoint之后，
 		再cp pack2是否有效，如果是则改为指向cp pack 2 
 	*/
-	sbi->ckpt = f2fs_bnvm_get_cp(sbi, 1);
+	sbi->ckpt = f2fs_bnvm_get_cp_ptr(sbi, 1);
 	if (!sbi->ckpt)
 		return -ENOMEM;	
 #endif
@@ -870,9 +870,9 @@ int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi)
 #ifdef F2FS_BYTE_NVM_ENABLE
 	/* 根据有效cp进行重定向 */
 	if (cur_page == cp1)
-		sbi->ckpt = f2fs_bnvm_get_cp(sbi,1);
+		sbi->ckpt = f2fs_bnvm_get_cp_ptr(sbi,1);
 	else
-		sbi->ckpt = f2fs_bnvm_get_cp(sbi,2);
+		sbi->ckpt = f2fs_bnvm_get_cp_ptr(sbi,2);
 #endif	
 	/* ZN end */
 	/* ZN：这一步开始就完成checkpoint block到内存的移植了 */

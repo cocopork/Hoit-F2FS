@@ -23,16 +23,23 @@
 /* ZN end */
 /*NVM标志位*/
 //记录nsb是否变脏并回写
-#define NVM_NSB_DIRTY 			0x01
+#define NVM_NSB_DIRTY 			0x0001
 //是否第一次挂载，读META转移到NVM设备
-#define NVM_FIRST_MOUNR 		0x02
+#define NVM_FIRST_MOUNR 		0x0002
 
-/* ZN begin */
-
+/* ZN begin */						
 //是否为可字节寻址的NVM
-#define NVM_BYTE_ACCESSIBLE 	0x08
+#define NVM_BYTE_ACCESSIBLE 	0x0004
 //DAX访问区域是否准备完毕
-#define NVM_BYTE_PRIVATE_READY	0x10
+#define NVM_BYTE_PRIVATE_READY	0x0008
+//CP已保存在NVM中
+#define NVM_BYTE_CP_READY		0x0010
+//NAT已保存在NVM中
+#define	NVM_BYTE_NAT_READY		0x0020
+//SIT已保存在NVM中
+#define NVM_BYTE_SIT_READY		0x0040
+//SSA已保存在NVM中
+#define NVM_BYTE_SSA_READY		0x0080
 /* ZN end */
 
 //第一个超级块块号
@@ -181,7 +188,7 @@ struct nvm_sb_info {
 	struct nvm_super_block *nsb;//关联nvm超级块
 	struct block_device *nbdev;//指向NVM设备信息的指针。初始化时根据ndev_path建立block_device结构并关联到nbdev
 	//记录nsb是否变脏并回写，ckpt_flag判断这个字段来决定是否更换nsb版本号
-	__u8 nvm_flag;//NVM标志位
+	__u16 nvm_flag;//NVM标志位
 	///GC相关
 	struct f2fs_gc_kthread *gc_thread;    /*nvm GC thread */
 	struct task_struct *aqu_sz_task;    /*aqu_sz更新线程*/

@@ -3798,6 +3798,9 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 				return err;
 			/* ZN：从物理sit entry获取信息 */
 			seg_info_from_raw_sit(se, &sit);
+			/* ZN begin */
+			
+			/* ZN end */
 			/* 统计node block的总数量 */
 			if (IS_NODESEG(se->type))
 				total_node_blocks += se->valid_blocks;

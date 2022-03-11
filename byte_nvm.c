@@ -20,6 +20,7 @@
  ********************************************************************************/
 /**
  * 进行dax所必要的初始化，初始化流程参考nova
+ * 同时返回物理超级块的位置
 */
 int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_nsb) {
 	struct nvm_sb_info *byte_nsbi = sbi->byte_nsbi;
@@ -68,8 +69,15 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 		return -EINVAL;
 	}
 	/* 如果是第一次挂载， byte_nsb 保存在第一块 */
-	*byte_nsb = (struct nvm_super_block*)virt_addr;
-
+	if(byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)
+		*byte_nsb = (struct nvm_super_block*)virt_addr;
+	else if (sbi->ckpt->ckpt_flags & CP_NSB_VER_FLAG)
+	{/* 如果不是，则根据checkpoint中的标志进行选择 */
+		unsigned char * blk_ptr = (unsigned char *)*byte_nsb;
+		blk_ptr += sbi->blocksize;
+		*byte_nsb = (struct nvm_super_block *)blk_ptr;
+	}
+		
 	if(!(sbi->byte_nsbi->nvm_flag & NVM_FIRST_MOUNR)){
 		/* 如果不是第一次，则需要到checkpoint里查看最新的 byte_nsb应该在哪一块 */
 		if(!sbi->ckpt) {
@@ -245,7 +253,7 @@ int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
 	if (!pre_ckpt)
 		return -EINVAL;
 	if (sbi->byte_nsbi->nvm_flag & NVM_BYTE_PRIVATE_READY)
-		new_ckpt = f2fs_bnvm_get_cp(sbi, sbi->cur_cp_pack);
+		new_ckpt = f2fs_bnvm_get_cp_ptr(sbi, sbi->cur_cp_pack);
 	else
 		return -EINVAL;
 	dst = (unsigned char *)new_ckpt;
@@ -254,6 +262,7 @@ int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
 	memcpy(dst, src, cp_blks * sbi->blocksize);
 	kfree(src);
 	sbi->ckpt = new_ckpt;
+	byte_nsbi->nvm_flag |= NVM_BYTE_CP_READY;
 	return 0;
 }
 
@@ -498,3 +507,5 @@ void print_ckpt_info(struct f2fs_sb_info *sbi) {
 	printk(KERN_INFO"ZN trap: alloc_type[CURSEG_HOT_DATA]	%d",cp->alloc_type[CURSEG_HOT_DATA]);
 	printk(KERN_INFO"ZN trap: =================================");		
 }
+
+void 

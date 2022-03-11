@@ -743,7 +743,7 @@ static inline struct f2fs_checkpoint *F2FS_CKPT(struct f2fs_sb_info *sbi)
  59e:	03 87 24 04 00 00    	add    0x424(%rdi),%eax
 }
 
-static inline block_t f2fs_bnvm_get_cp_sum(struct f2fs_sb_info *sbi)
+static inline block_t f2fs_bnvm_get_cp_ptr_sum(struct f2fs_sb_info *sbi)
 {/* 获取nvm有效cp pack中的第一个summary blk块号 */
     block_t sum_blk = f2fs_bnvm_get_valid_cp_addr(sbi);
     sum_blk += le32_to_cpu(F2FS_CKPT(sbi)->cp_pack_start_sum);
@@ -1368,7 +1368,7 @@ static inline int f2fs_test_bit(unsigned int nr, char *addr)
 Disassembly of section .text.unlikely:
 
 0000000000000000 <f2fs_move_cp_to_bnvm.cold>:
-		new_ckpt = f2fs_bnvm_get_cp(sbi, sbi->cur_cp_pack);
+		new_ckpt = f2fs_bnvm_get_cp_ptr(sbi, sbi->cur_cp_pack);
    0:	8b 87 80 01 00 00    	mov    0x180(%rdi),%eax
     if (cp_pack_no == 1)
    6:	83 f8 01             	cmp    $0x1,%eax
