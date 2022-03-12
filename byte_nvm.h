@@ -17,7 +17,7 @@ int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte
 void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all);
 
 int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi);
-int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi);
+int f2fs_move_cp_super_to_bnvm(struct f2fs_sb_info *sbi);
 int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi);
 void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi);
 int bnvm_read_normal_summaries(struct f2fs_sb_info *sbi, int type);
@@ -70,7 +70,6 @@ static inline struct f2fs_checkpoint * f2fs_bnvm_get_cp_ptr(struct f2fs_sb_info 
                                      + F2FS_BYTE_NVM_PRIVATE(sbi)->cp_blkaddr * F2FS_BLKSIZE);
     else if (cp_pack_no == 2)
     /* 获取cp pack 2的块首 */
-    //! 有争议，不能保证checkpoint只占一段
         return (struct f2fs_checkpoint *)(F2FS_BYTE_NVM_ADDR(sbi)
                                     + (F2FS_BYTE_NVM_PRIVATE(sbi)->cp_blkaddr + sbi->blocks_per_seg) 
                                     * F2FS_BLKSIZE);  

@@ -1449,7 +1449,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 				le32_to_cpu(ckpt->checksum_offset)))
 				= cpu_to_le32(crc32);
 	//TODO：落盘部分需要改造
-#ifndef F2FS_BYTE_NVM_ENABLE
+
 	start_blk = __start_cp_next_addr(sbi);
 
 	/* write nat bits */
@@ -1459,7 +1459,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 		cp_ver |= ((__u64)crc32 << 32);
 		*(__le64 *)nm_i->nat_bits = cpu_to_le64(cp_ver);
-		/* ZN：blk是nat bitmap在cp super block中的位置（放置在block 的末尾） */
+		/* ZN：blk是nat bitmap在cp segment中的位置（放置在segment 的末尾） */
 		blk = start_blk + sbi->blocks_per_seg - nm_i->nat_bits_blocks;
 		for (i = 0; i < nm_i->nat_bits_blocks; i++)
 			f2fs_update_meta_page(sbi, nm_i->nat_bits +
@@ -1537,9 +1537,6 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	 */
 	commit_checkpoint(sbi, ckpt, start_blk);
 	wait_on_all_pages_writeback(sbi);
-#else 
-
-#endif
 
 	f2fs_release_ino_entry(sbi, false);
 

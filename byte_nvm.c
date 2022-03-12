@@ -286,9 +286,7 @@ int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi){
 	}
 	dst += cp_blks * blocksize;
 	to_read_blks = __le32_to_cpu(sbi->ckpt->cp_pack_total_block_count) - cp_blks;
-	/* 先预读剩下的块（orphen node + data summary + node summary + tail super） */
-	f2fs_ra_meta_pages(sbi, start, to_read_blks, META_CP, true);
-	/* 在把剩下的块都读入到nvm */
+	/* 把剩下的块读到nvm（orphen node + data summary + node summary + tail super） */
 	for ( i = 0; i < to_read_blks; i++)
 	{
 		page = f2fs_get_meta_page(sbi, start++);
@@ -301,6 +299,124 @@ int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi){
 	}
 	byte_nsbi->nvm_flag |= NVM_BYTE_CP_CONTENT_READY;
 	return 0;
+}
+/******************************************************************************
+ * do_checkpoint()
+ ********************************************************************************/
+int bnvm_do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
+{
+	struct f2fs_checkpoint *cur_ckpt = F2FS_CKPT(sbi);
+	struct f2fs_checkpoint *ckpt;/* 当前将要写入的ckpt */
+	struct f2fs_nm_info *nm_i = NM_I(sbi);
+	unsigned long orphan_num = sbi->im[ORPHAN_INO].ino_num, flags;
+	unsigned char * src , *dst;
+	unsigned int data_sum_blocks, orphan_blocks;
+	__u32 crc32 = 0;
+	int i;
+	int cp_payload_blks = __cp_payload(sbi);
+	struct super_block *sb = sbi->sb;
+	struct curseg_info *seg_i = CURSEG_I(sbi, CURSEG_HOT_NODE);
+	struct page *page;
+	unsigned int blocksize = sbi->blocksize;
+	u64 kbytes_written;
+	
+	int err;	
+	if (sbi->cur_cp_pack == 1) 
+		ckpt = f2fs_bnvm_get_cp_ptr(sbi, 2);
+	else
+		ckpt = f2fs_bnvm_get_cp_ptr(sbi,1);
+	
+	/* ZN：如果META区存在脏page，则等待回写 */
+	while (get_pages(sbi, F2FS_DIRTY_META)) {
+		f2fs_sync_meta_pages(sbi, META, LONG_MAX, FS_CP_META_IO);
+		if (unlikely(f2fs_cp_error(sbi)))
+			return -EIO;
+	}
+
+	/* ZN：记录六个curseg的segno，blk_off和分配方式 */
+	ckpt->elapsed_time = cpu_to_le64(get_mtime(sbi, true));
+	ckpt->free_segment_count = cpu_to_le32(free_segments(sbi));
+	for (i = 0; i < NR_CURSEG_NODE_TYPE; i++) {
+		ckpt->cur_node_segno[i] =
+			cpu_to_le32(curseg_segno(sbi, i + CURSEG_HOT_NODE));
+		ckpt->cur_node_blkoff[i] =
+			cpu_to_le16(curseg_blkoff(sbi, i + CURSEG_HOT_NODE));
+		ckpt->alloc_type[i + CURSEG_HOT_NODE] =
+				curseg_alloc_type(sbi, i + CURSEG_HOT_NODE);
+	}
+	for (i = 0; i < NR_CURSEG_DATA_TYPE; i++) {
+		ckpt->cur_data_segno[i] =
+			cpu_to_le32(curseg_segno(sbi, i + CURSEG_HOT_DATA));
+		ckpt->cur_data_blkoff[i] =
+			cpu_to_le16(curseg_blkoff(sbi, i + CURSEG_HOT_DATA));
+		ckpt->alloc_type[i + CURSEG_HOT_DATA] =
+				curseg_alloc_type(sbi, i + CURSEG_HOT_DATA);
+	}
+
+	/* 2 cp  + n data seg summary + orphan inode blocks */
+	/* ZN：计算checkpoint各个部分需要写回的块数和起始位置 */
+	data_sum_blocks = f2fs_npages_for_summary_flush(sbi, false);
+	spin_lock_irqsave(&sbi->cp_lock, flags);
+	if (data_sum_blocks < NR_CURSEG_DATA_TYPE)
+		__set_ckpt_flags(ckpt, CP_COMPACT_SUM_FLAG);
+	else
+		__clear_ckpt_flags(ckpt, CP_COMPACT_SUM_FLAG);
+	spin_unlock_irqrestore(&sbi->cp_lock, flags);
+
+	/* 获取orphen block的数量，以计算ckpt中sum 的起始位置 */
+	orphan_blocks = GET_ORPHAN_BLOCKS(orphan_num);
+	ckpt->cp_pack_start_sum = cpu_to_le32(1 + cp_payload_blks +
+			orphan_blocks);	
+
+	update_ckpt_flags(sbi, cpc);
+	//COMPLETED:在此切换nsb版本号：如果超级块为脏，切换版本号
+	/*start*/
+	if(sbi->nsbi->nvm_flag & NVM_NSB_DIRTY){
+		nvm_switch_nsb_version(ckpt);
+		//更新版本之后清除NVM_NSB_DIRTY标志
+		sbi->nsbi->nvm_flag ^= NVM_NSB_DIRTY;
+	}
+	/*end*/
+
+	/* update SIT/NAT bitmap */
+	/* ZN：将sm_i和nm_i中的bitmap复制到内存中的cp super block */
+	get_sit_bitmap(sbi, __bitmap_ptr(sbi, SIT_BITMAP));
+	get_nat_bitmap(sbi, __bitmap_ptr(sbi, NAT_BITMAP));
+
+	crc32 = f2fs_crc32(sbi, ckpt, le32_to_cpu(ckpt->checksum_offset));
+	*((__le32 *)((unsigned char *)ckpt +
+				le32_to_cpu(ckpt->checksum_offset)))
+				= cpu_to_le32(crc32);
+
+	/* write nat bits */
+	if (enabled_nat_bits(sbi, cpc)) {
+		__u64 cp_ver = cur_cp_version(cur_ckpt);
+		unsigned char * nat_bitmap_ptr;
+		cp_ver |= ((__u64)crc32 << 32);
+		*(__le64 *)nm_i->nat_bits = cpu_to_le64(cp_ver);
+		nat_bitmap_ptr = (unsigned char *)ckpt 
+						+ (sbi->blocks_per_seg - nm_i->nat_bits_blocks) 
+						* blocksize;
+		for ( i = 0; i < nm_i->nat_bits_blocks; i++)
+			memcpy(nat_bitmap_ptr + (i << F2FS_BLKSIZE_BITS), 
+						nm_i->nat_bits + (i << F2FS_BLKSIZE_BITS), sbi->blocksize);
+	}
+
+	/* ZN：复制cp super block */
+	src = (unsigned char*)cur_ckpt;
+	dst = (unsigned char*)ckpt;
+	memcpy(dst, src, blocksize);
+	src += blocksize;
+	dst += blocksize;
+	
+	/* 把附加块也写入（如果sit version bitmap需要额外块来保存的话） */
+	for (i = 0; i < cp_payload_blks; i++)
+	{
+		memcpy(dst, src, blocksize);
+		src += blocksize;
+		dst += blocksize;		
+	}
+
 }
 /******************************************************************************
  * build_curseg()

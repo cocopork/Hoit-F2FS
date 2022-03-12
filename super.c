@@ -1134,9 +1134,14 @@ static void f2fs_put_super(struct super_block *sb)
 	/* destroy f2fs internal modules */
 	f2fs_destroy_node_manager(sbi);
 	f2fs_destroy_segment_manager(sbi);
-
+#ifndef F2FS_BYTE_NVM_ENABLE
 	kfree(sbi->ckpt);
-
+#else
+	if (sbi->byte_nsbi->nvm_flag & NVM_BYTE_CP_SUPER_READY)
+		sbi->ckpt = NULL;
+	else
+		kfree(sbi->ckpt);
+#endif
 	f2fs_unregister_sysfs(sbi);
 
 	sb->s_fs_info = NULL;
@@ -3485,12 +3490,16 @@ free_sm:
 	f2fs_destroy_segment_manager(sbi);
 free_devices:
 	destroy_device_list(sbi);
+#ifndef F2FS_BYTE_NVM_ENABLE
+	kfree(sbi->ckpt);
+#else
 	if(sbi->byte_nsbi->nvm_flag & NVM_BYTE_CP_SUPER_READY){
 		sbi->ckpt = NULL;
 		printk(KERN_INFO"ZN trap: ckpt = NULL");
 	}
 	else
 		kfree(sbi->ckpt);
+#endif	
 free_meta_inode:
 	make_bad_inode(sbi->meta_inode);
 	iput(sbi->meta_inode);
