@@ -29,17 +29,19 @@
 
 /* ZN begin */						
 //是否为可字节寻址的NVM
-#define NVM_BYTE_ACCESSIBLE 	0x0004
+#define NVM_BYTE_ACCESSIBLE 		0x0004
 //DAX访问区域是否准备完毕
-#define NVM_BYTE_PRIVATE_READY	0x0008
-//CP已保存在NVM中
-#define NVM_BYTE_CP_READY		0x0010
+#define NVM_BYTE_PRIVATE_READY		0x0008
+//CP超级块已保存在NVM中
+#define NVM_BYTE_CP_SUPER_READY		0x0010
+//CP的剩下内容已保存在NVM中
+#define NVM_BYTE_CP_CONTENT_READY	0x0020
 //NAT已保存在NVM中
-#define	NVM_BYTE_NAT_READY		0x0020
+#define	NVM_BYTE_NAT_READY			0x0040
 //SIT已保存在NVM中
-#define NVM_BYTE_SIT_READY		0x0040
+#define NVM_BYTE_SIT_READY			0x0080
 //SSA已保存在NVM中
-#define NVM_BYTE_SSA_READY		0x0080
+#define NVM_BYTE_SSA_READY			0x0100
 /* ZN end */
 
 //第一个超级块块号

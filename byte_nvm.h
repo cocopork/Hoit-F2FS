@@ -18,7 +18,7 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all);
 
 int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi);
 int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi);
-
+int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi);
 void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi);
 int bnvm_read_normal_summaries(struct f2fs_sb_info *sbi, int type);
 /* 访问元数据区域函数 */
@@ -33,6 +33,7 @@ inline struct f2fs_summary_block * f2fs_bnvm_get_sum_blk(struct f2fs_sb_info *sb
 void print_byte_nvm_mount_parameter(struct f2fs_sb_info *sbi);
 void print_raw_info(struct f2fs_sb_info *sbi);
 void print_ckpt_info(struct f2fs_sb_info *sbi);
+
 /* 
  * inline function
  */

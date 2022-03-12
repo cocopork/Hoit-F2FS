@@ -3063,7 +3063,8 @@ static void read_compacted_summaries(struct f2fs_sb_info *sbi)
 	int i, j, offset;
 	//ZN：计算data summary的起始地址(以块为单位)，就是f2fs_checkpoint的尾巴
 	start = start_sum_block(sbi);
-
+	printk(KERN_INFO"ZN trap: start_cp_addr %d", __start_cp_addr(sbi));
+	printk(KERN_INFO"ZN trap: start sum blk %d",start);
 	page = f2fs_get_meta_page(sbi, start++);
 	kaddr = (unsigned char *)page_address(page);
 
@@ -3235,7 +3236,8 @@ static int restore_curseg_summaries(struct f2fs_sb_info *sbi)
 			return err;
 	}
 #endif
-
+	printk(KERN_INFO"ZN trap: nats_in_cursum %d ", nats_in_cursum(nat_j));
+	printk(KERN_INFO"ZN trap: sits_in_cursum %d ", sits_in_cursum(sit_j));
 	/* sanity check for summary blocks */
 	if (nats_in_cursum(nat_j) > NAT_JOURNAL_ENTRIES ||
 			sits_in_cursum(sit_j) > SIT_JOURNAL_ENTRIES)
@@ -3799,7 +3801,7 @@ static int build_sit_entries(struct f2fs_sb_info *sbi)
 			/* ZN：从物理sit entry获取信息 */
 			seg_info_from_raw_sit(se, &sit);
 			/* ZN begin */
-			
+			// print_se(se);
 			/* ZN end */
 			/* 统计node block的总数量 */
 			if (IS_NODESEG(se->type))
@@ -4063,16 +4065,19 @@ int f2fs_build_segment_manager(struct f2fs_sb_info *sbi)
 	if (err)
 		return err;
 	err = build_curseg(sbi);
+	printk(KERN_INFO"ZN trap: build_curseg err %d", err);
 	if (err)
 		return err;
 
 	/* reinit free segmap based on SIT */
 	err = build_sit_entries(sbi);
+	printk(KERN_INFO"ZN trap: build_sit_entries err %d", err);
 	if (err)
 		return err;
 
 	init_free_segmap(sbi);
 	err = build_dirty_segmap(sbi);
+	printk(KERN_INFO"ZN trap: build_dirty_segmap err %d", err);
 	if (err)
 		return err;
 
@@ -4228,3 +4233,11 @@ void f2fs_destroy_segment_manager_caches(void)
 	kmem_cache_destroy(discard_entry_slab);
 	kmem_cache_destroy(inmem_entry_slab);
 }
+
+/* ZN begin */
+void print_se(struct seg_entry *se){
+	printk(KERN_INFO"ZN trap: se->type %d",se->type);
+	printk(KERN_INFO"ZN trap: se->valid_blocks %d", se->valid_blocks);
+	printk(KERN_INFO"ZN trap: se->ckpt_valid_blocks %d", se->ckpt_valid_blocks);
+}
+/* ZN end */

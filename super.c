@@ -2829,7 +2829,7 @@ try_onemore:
 	nsbi = kzalloc(sizeof(struct nvm_sb_info), GFP_KERNEL);
 	if(!nsbi)
 		return -ENOMEM;
-	byte_nsbi->nvm_flag ^= NVM_BYTE_ACCESSIBLE;
+	nsbi->nvm_flag ^= NVM_BYTE_ACCESSIBLE;
 	sbi->nsbi = nsbi;
 	/* end */
 
@@ -3205,11 +3205,22 @@ try_onemore:
 			f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
 			goto free_meta_inode;
 		}
-		err = f2fs_move_cp_to_bnvm(sbi);
+		// printk(KERN_ERR"ZN trap: before moving cp to bnvm ");
+		// print_ckpt_info(sbi);
+#ifdef F2FS_BYTE_NVM_ENABLE
+		err = f2fs_move_cp_super_to_bnvm(sbi);
 		if (err) {
 			printk(KERN_ERR"ZN trap: Failed to move cp to bnvm ");
 			goto free_meta_inode;
-		}		
+		}	
+		err = f2fs_move_cp_content_to_bvnm(sbi);
+		if (err) {
+			printk(KERN_ERR"ZN trap: Failed to move cp content to bnvm ");
+			goto free_meta_inode;
+		}			
+		// printk(KERN_ERR"ZN trap: after ");
+		// print_ckpt_info(sbi);	
+#endif
 		/* 完成初始化之后要清楚第一次挂载标志 */
 		byte_nsbi->nvm_flag ^= NVM_FIRST_MOUNR;
 	}
@@ -3230,7 +3241,18 @@ try_onemore:
 		}
 		res = init_byte_nvm_sb_info(sbi, byte_nsb);
 		nvm_assert(!res);
-		f2fs_move_cp_to_bnvm(sbi);
+#ifdef F2FS_BYTE_NVM_ENABLE
+		err = f2fs_move_cp_super_to_bnvm(sbi);
+		if (err) {
+			printk(KERN_ERR"ZN trap: Failed to move cp to bnvm ");
+			goto free_meta_inode;
+		}	
+		err = f2fs_move_cp_content_to_bvnm(sbi);
+		if (err) {
+			printk(KERN_ERR"ZN trap: Failed to move cp content to bnvm ");
+			goto free_meta_inode;
+		}	
+#endif
 		sbi->byte_nsbi->nsb = byte_nsb;
 	}
 	/* 查看参数 */
@@ -3463,8 +3485,10 @@ free_sm:
 	f2fs_destroy_segment_manager(sbi);
 free_devices:
 	destroy_device_list(sbi);
-	if(sbi->byte_nsbi->nvm_flag & NVM_BYTE_CP_READY)
+	if(sbi->byte_nsbi->nvm_flag & NVM_BYTE_CP_SUPER_READY){
 		sbi->ckpt = NULL;
+		printk(KERN_INFO"ZN trap: ckpt = NULL");
+	}
 	else
 		kfree(sbi->ckpt);
 free_meta_inode:
@@ -3474,7 +3498,7 @@ free_io_dummy:
 	mempool_destroy(sbi->write_io_dummy);
 free_percpu:
 	destroy_percpu_info(sbi);
-free_bio_info:
+free_bio_info:	
 	for (i = 0; i < NR_PAGE_TYPE; i++)
 		kfree(sbi->write_io[i]);
 free_options:
@@ -3486,11 +3510,15 @@ free_options:
 free_sb_buf:
 	kfree(raw_super);
 free_sbi:
+	
 	if (sbi->s_chksum_driver)
 		crypto_free_shash(sbi->s_chksum_driver);
 	kfree(sbi);
-
 	/* give only one another chance */
+	/* ZN begin */
+	/* 现在不给再来一次的机会 */
+	retry = false;
+	/* ZN end */
 	if (retry) {
 		retry = false;
 		shrink_dcache_sb(sb);

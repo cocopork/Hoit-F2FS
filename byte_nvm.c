@@ -243,9 +243,9 @@ void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all){
 /**
  * 将内存中的sbi->ckpt转移至bnvm上，调用之前确保ckpt已经在内存中
 */
-int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
+int f2fs_move_cp_super_to_bnvm(struct f2fs_sb_info *sbi)
 {
-	unsigned int cp_blks = 1 + __cp_payload(sbi);
+	unsigned int cp_blks = 1+ __cp_payload(sbi);
 	struct nvm_sb_info *byte_nsbi  = F2FS_BYTE_NSB_I(sbi);
 	struct f2fs_checkpoint *pre_ckpt = sbi->ckpt;
 	struct f2fs_checkpoint *new_ckpt;
@@ -258,14 +258,50 @@ int f2fs_move_cp_to_bnvm(struct f2fs_sb_info *sbi)
 		return -EINVAL;
 	dst = (unsigned char *)new_ckpt;
 	src = (unsigned char *)pre_ckpt;
-	printk(KERN_INFO"ZN trap: dst %p src %p",new_ckpt, pre_ckpt);
 	memcpy(dst, src, cp_blks * sbi->blocksize);
 	kfree(src);
 	sbi->ckpt = new_ckpt;
-	byte_nsbi->nvm_flag |= NVM_BYTE_CP_READY;
+	byte_nsbi->nvm_flag |= NVM_BYTE_CP_SUPER_READY;
 	return 0;
 }
 
+/**
+ * 从SSD上把cp除超级块剩下的部分读取到byte nvm中
+ * 
+*/
+int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi){
+	struct nvm_sb_info *byte_nsbi  = F2FS_BYTE_NSB_I(sbi);
+	unsigned char *dst = (unsigned char *)sbi->ckpt;
+	unsigned char *src;
+	unsigned int cp_blks = 1+ __cp_payload(sbi);
+	unsigned int to_read_blks;
+	unsigned int blocksize = sbi->blocksize;
+	struct page *page;
+	block_t start = start_sum_block(sbi);
+	unsigned int i;
+	if (!(sbi->byte_nsbi->nvm_flag & NVM_BYTE_CP_SUPER_READY))
+	{
+		printk(KERN_INFO"ZN trap: cp super is not in byte nvm");
+		return -EINVAL;
+	}
+	dst += cp_blks * blocksize;
+	to_read_blks = __le32_to_cpu(sbi->ckpt->cp_pack_total_block_count) - cp_blks;
+	/* 先预读剩下的块（orphen node + data summary + node summary + tail super） */
+	f2fs_ra_meta_pages(sbi, start, to_read_blks, META_CP, true);
+	/* 在把剩下的块都读入到nvm */
+	for ( i = 0; i < to_read_blks; i++)
+	{
+		page = f2fs_get_meta_page(sbi, start++);
+		if (!page)
+			return -EINVAL;
+		src = (unsigned char*)page_address(page);
+		memcpy(dst, src, blocksize);
+		f2fs_put_page(page, 1);
+		dst += blocksize;
+	}
+	byte_nsbi->nvm_flag |= NVM_BYTE_CP_CONTENT_READY;
+	return 0;
+}
 /******************************************************************************
  * build_curseg()
  ********************************************************************************/
@@ -283,6 +319,8 @@ void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi)
 	int i, j, offset;
 
 	start = f2fs_bnvm_get_cp_sum(sbi);
+	// printk(KERN_INFO"ZN trap: nvm start_cp_addr %d", f2fs_bnvm_get_valid_cp_addr(sbi));
+	// printk(KERN_INFO"ZN trap: nvm start sum blk %d", start);
 	/* 已经读取整个cp pack到nvm中，就直接按字节访问 */
 	kaddr = F2FS_BYTE_NVM_ADDR(sbi) + start * sbi->blocksize;
 	/* 复制 nat journal */
@@ -501,6 +539,7 @@ void print_ckpt_info(struct f2fs_sb_info *sbi) {
 	printk(KERN_INFO"ZN trap: cur_cp_pack					%d",sbi->cur_cp_pack);
 	printk(KERN_INFO"ZN trap: user_block_count				%d",cp->user_block_count);
 	printk(KERN_INFO"ZN trap: valid_block_count				%d",cp->valid_block_count);
+	printk(KERN_INFO"ZN trap: valid_node_count				%d",cp->valid_node_count);
 	printk(KERN_INFO"ZN trap: free_segment_count			%d",cp->free_segment_count);
 	printk(KERN_INFO"ZN trap: cp_pack_total_block_count		%d",cp->cp_pack_total_block_count);
 	printk(KERN_INFO"ZN trap: cp_pack_start_sum				%d",cp->cp_pack_start_sum);
@@ -508,4 +547,3 @@ void print_ckpt_info(struct f2fs_sb_info *sbi) {
 	printk(KERN_INFO"ZN trap: =================================");		
 }
 
-void 

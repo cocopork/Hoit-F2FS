@@ -3399,7 +3399,6 @@ void get_real_page(struct f2fs_sb_info *sbi, struct page *real_page, struct bloc
 /* ZN begin */
 //f2fs.h一定要导入byte_nvm.h，否则编译失败。。
 #include "byte_nvm.h"
-//#define F2FS_BYTE_NVM_ENABLE
 /* ZN end */
 
 #endif

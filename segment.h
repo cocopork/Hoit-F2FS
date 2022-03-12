@@ -894,4 +894,5 @@ wake_up:
 /* ZN begin */
 /* 暴露一些函数给byte_nvm.c */
 void reset_curseg(struct f2fs_sb_info *sbi, int type, int modified);
+void print_se(struct seg_entry *se);
 /* ZN end */
