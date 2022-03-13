@@ -15,12 +15,16 @@ int init_byte_nvm_dax(struct f2fs_sb_info *sbi, struct nvm_super_block **byte_ns
 int init_byte_nvm_private_info(struct f2fs_sb_info *sbi);
 int init_byte_nvm_sb_info(struct f2fs_sb_info *sbi, struct nvm_super_block *byte_nsb);
 void byte_nvm_flush_mpt_pages(struct f2fs_sb_info *sbi, int flush_all);
-
+//f2fs_fill_super
 int f2fs_bnvm_get_valid_checkpoint_first_mount(struct f2fs_sb_info *sbi);
 int f2fs_move_cp_super_to_bnvm(struct f2fs_sb_info *sbi);
 int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi);
+//do_checkpoint
+int bnvm_do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc);
+//build_curseg
 void bnvm_read_compacted_summaries(struct f2fs_sb_info *sbi);
 int bnvm_read_normal_summaries(struct f2fs_sb_info *sbi, int type);
+
 /* 访问元数据区域函数 */
 inline struct f2fs_nat_entry * f2fs_bnvm_get_nat_entry(struct f2fs_sb_info *sbi, 
                                         nid_t nid);

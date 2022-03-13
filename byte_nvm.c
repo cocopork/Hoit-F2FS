@@ -303,6 +303,152 @@ int f2fs_move_cp_content_to_bvnm(struct f2fs_sb_info *sbi){
 /******************************************************************************
  * do_checkpoint()
  ********************************************************************************/
+/**
+ * @param dst，nvm上orphan node区域起始地址
+*/
+void bnvm_write_orphan_inodes(struct f2fs_sb_info *sbi, unsigned char *dst)
+{
+	struct list_head *head;
+	struct f2fs_orphan_block *orphan_blk = NULL;
+	unsigned int nentries = 0;
+	unsigned short index = 1;
+	unsigned short orphan_blocks;
+	struct ino_entry *orphan = NULL;
+	struct inode_management *im = &sbi->im[ORPHAN_INO];
+	orphan_blocks = GET_ORPHAN_BLOCKS(im->ino_num);
+
+	head = &im->ino_list;
+	orphan_blk = (struct f2fs_orphan_block *)dst;
+	list_for_each_entry(orphan, head, list) {
+
+		orphan_blk->ino[nentries++] = cpu_to_le32(orphan->ino);
+		if (nentries == F2FS_ORPHANS_PER_BLOCK) {
+			/*
+				* an orphan block is full of 1020 entries,
+				* then we need to flush current orphan blocks
+				* and bring another one in memory
+				*/
+			orphan_blk->blk_addr = cpu_to_le16(index);
+			orphan_blk->blk_count = cpu_to_le16(orphan_blocks);
+			orphan_blk->entry_count = cpu_to_le32(nentries);
+			dst += sbi->blocksize;
+			orphan_blk = (struct f2fs_orphan_block *)dst;
+			index++;
+			nentries = 0;
+		}
+	}
+
+	if (nentries != 0)
+	{
+		orphan_blk->blk_addr = cpu_to_le16(index);
+		orphan_blk->blk_count = cpu_to_le16(orphan_blocks);
+		orphan_blk->entry_count = cpu_to_le32(nentries);
+	}
+	
+}
+/**
+ * 写入compacted summary
+  */
+void bnvm_write_compacted_summaries(struct f2fs_sb_info *sbi, unsigned char * dst)
+{
+	unsigned char *kaddr = dst;
+	struct f2fs_summary *summary;
+	struct curseg_info *seg_i;
+	int written_size = 0;
+	int i, j;
+
+	/* Step 1: write nat cache */
+	seg_i = CURSEG_I(sbi, CURSEG_HOT_DATA);
+	memcpy(kaddr, seg_i->journal, SUM_JOURNAL_SIZE);
+	written_size += SUM_JOURNAL_SIZE;
+
+	/* Step 2: write sit cache */
+	seg_i = CURSEG_I(sbi, CURSEG_COLD_DATA);
+	memcpy(kaddr + written_size, seg_i->journal, SUM_JOURNAL_SIZE);
+	written_size += SUM_JOURNAL_SIZE;
+
+	/* Step 3: write summary entries */
+	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+		unsigned short blkoff;
+		seg_i = CURSEG_I(sbi, i);
+		if (sbi->ckpt->alloc_type[i] == SSR)/* ZN：SSR是乱序分配，所以全部都要写入 */
+			blkoff = sbi->blocks_per_seg;
+		else
+			blkoff = curseg_blkoff(sbi, i);
+
+		for (j = 0; j < blkoff; j++) {
+			summary = (struct f2fs_summary *)(kaddr + written_size);
+			*summary = seg_i->sum_blk->entries[j];
+			written_size += SUMMARY_SIZE;
+
+			if (written_size + SUMMARY_SIZE <= PAGE_SIZE -
+							SUM_FOOTER_SIZE)
+				continue;/* ZN：仍没写满就跳过换页操作 */
+
+			kaddr += sbi->blocksize;
+			written_size = 0;
+		}
+	}
+}
+/**
+ * 写入normal summary到byte nvm中
+ * @param type，数据类型，从CURSEG_HOT_DATA，到CURSEG_COLD_NODE
+ * @param dst_sum，summray block起始地址
+  */
+void bnvm_write_current_sum_page(struct f2fs_sb_info *sbi,
+						int type, unsigned char dst_sum)
+{
+	struct curseg_info *curseg = CURSEG_I(sbi, type);
+	struct f2fs_summary_block *src = curseg->sum_blk;
+	struct f2fs_summary_block *dst = (struct f2fs_summary_block *)dst;
+	
+	memset(dst, 0, PAGE_SIZE);
+		mutex_lock(&curseg->curseg_mutex);
+
+	down_read(&curseg->journal_rwsem);
+	memcpy(&dst->journal, curseg->journal, SUM_JOURNAL_SIZE);
+	up_read(&curseg->journal_rwsem);
+
+	memcpy(dst->entries, src->entries, SUM_ENTRY_SIZE);
+	memcpy(&dst->footer, &src->footer, SUM_FOOTER_SIZE);
+
+	mutex_unlock(&curseg->curseg_mutex);
+}						
+
+void bnvm_write_normal_summaries(struct f2fs_sb_info *sbi, unsigned char * dst, int type)
+{
+	int i, end;
+	if (IS_DATASEG(type))
+		end = type + NR_CURSEG_DATA_TYPE;
+	else
+		end = type + NR_CURSEG_NODE_TYPE;
+
+	for (i = type; i < end; i++)
+		bnvm_write_current_sum_page(sbi, i, dst + (i - type)*sbi->blocksize);
+}
+
+/**
+ * byte nvm checkpoint写入data summary
+ * @param dst，当前data summary首地址
+*/
+void bnvm_write_data_summaries(struct f2fs_sb_info *sbi, unsigned char * dst)
+{
+	if (is_set_ckpt_flags(sbi, CP_COMPACT_SUM_FLAG))
+		bnvm_write_compacted_summaries(sbi, dst);
+	else
+		bnvm_write_normal_summaries(sbi, dst, CURSEG_HOT_DATA);
+}
+
+static void bnvm_commit_checkpoint(struct f2fs_sb_info *sbi,
+	unsigned char *src, unsigned char *dst)
+{
+	memcpy(dst, src, PAGE_SIZE);
+}
+
+/**
+ * 在非卸载的情况下，写入checkpoint只用写入到nvm
+ * 如果要卸载f2fs，则需要落盘
+ */
 int bnvm_do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 {
 	struct f2fs_checkpoint *cur_ckpt = F2FS_CKPT(sbi);
@@ -417,6 +563,52 @@ int bnvm_do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 		dst += blocksize;		
 	}
 
+	if (orphan_num)
+	{
+		bnvm_write_orphan_inodes(sbi, dst);
+		dst += orphan_blocks * blocksize;
+	}
+	
+	bnvm_write_data_summaries(sbi, dst);
+	dst += data_sum_blocks * blocksize;
+
+	/* Record write statistics in the hot node summary */
+	kbytes_written = sbi->kbytes_written;
+	if (sb->s_bdev->bd_part)
+		kbytes_written += BD_PART_WRITTEN(sbi);
+	seg_i->journal->info.kbytes_written = cpu_to_le64(kbytes_written);
+
+	//TODO：按设计来说将cp写入byte nvm不会产生这一步
+	if (__remain_node_summaries(cpc->reason)) {
+		f2fs_write_node_summaries(sbi, dst);// 将node summary以及里面的journal写入磁盘
+		dst += NR_CURSEG_NODE_TYPE * blocksize;
+	}
+
+	/* update user_block_counts */
+	sbi->last_valid_block_count = sbi->total_valid_block_count;
+	percpu_counter_set(&sbi->alloc_valid_block_count, 0);
+
+	//TODO:bnvm的硬件刷回要怎么做？
+	err = f2fs_flush_device_cache(sbi);
+	if (err)
+		return err;
+	
+	bnvm_commit_checkpoint(sbi, ckpt, dst);
+
+	f2fs_release_ino_entry(sbi, false);
+
+	if (unlikely(f2fs_cp_error(sbi)))
+		return -EIO;
+
+	clear_sbi_flag(sbi, SBI_IS_DIRTY);
+	clear_sbi_flag(sbi, SBI_NEED_CP);
+	__set_cp_next_pack(sbi);
+
+	if (get_pages(sbi, F2FS_DIRTY_NODES) ||
+			get_pages(sbi, F2FS_DIRTY_IMETA))
+		set_sbi_flag(sbi, SBI_IS_DIRTY);
+	
+	return 0;
 }
 /******************************************************************************
  * build_curseg()

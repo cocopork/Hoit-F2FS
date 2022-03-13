@@ -1670,7 +1670,14 @@ int f2fs_write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	/*end*/
 
 	/* unlock all the fs_lock[] in do_checkpoint() */
+#ifndef F2FS_BYTE_NVM_ENABLE
 	err = do_checkpoint(sbi, cpc);
+#else
+	if(__remain_node_summaries(cpc->reason))
+		err = do_checkpoint(sbi, cpc);
+	else
+		err = bnvm_do_checkpoint(sbi, cpc);
+#endif
 	if (err)
 		f2fs_release_discard_addrs(sbi);
 	else
